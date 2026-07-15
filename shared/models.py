@@ -171,3 +171,12 @@ class AnalyticsEvent(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="events")
+
+
+class Settings(Base):
+    __tablename__ = "settings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    key = Column(String(255), unique=True, nullable=False)
+    value = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

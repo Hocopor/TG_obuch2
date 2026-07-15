@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from shared.database import init_db
-from .routers import auth, dashboard, users, mailings, objects, legal
+from .routers import auth, dashboard, users, mailings, objects, legal, settings
 
 app = FastAPI(title="Admin Panel")
 
@@ -16,6 +16,7 @@ app.include_router(users.router)
 app.include_router(mailings.router)
 app.include_router(objects.router)
 app.include_router(legal.router)
+app.include_router(settings.router)
 
 
 @app.on_event("startup")
