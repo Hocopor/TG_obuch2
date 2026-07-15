@@ -238,8 +238,7 @@ async def goal_selected(callback: CallbackQuery, session: AsyncSession, bot: Bot
 
     await callback.message.answer(
         "🎬 Для более чёткого представления, что ты сможешь делать по итогам курса, "
-        "вот несколько примеров реальных видео, которые мы делали:",
-        reply_markup=main_menu_kb()
+        "вот несколько примеров реальных видео, которые мы делали:"
     )
     await callback.answer()
 
