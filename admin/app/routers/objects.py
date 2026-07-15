@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse, PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
+from sqlalchemy.orm import selectinload
 from shared.models import Object, User, ObjectStatusEnum
 from ..dependencies import get_db, require_auth, templates
 
@@ -11,9 +12,9 @@ router = APIRouter(prefix="/objects", dependencies=[Depends(require_auth)])
 @router.get("")
 async def objects_list(request: Request, session: AsyncSession = Depends(get_db)):
     result = await session.execute(
-        select(Object).options(
-            # joinedload not needed with selectinload
-        ).order_by(Object.created_at.desc())
+        select(Object)
+        .options(selectinload(Object.user))
+        .order_by(Object.created_at.desc())
     )
     objects = result.scalars().all()
     return templates.TemplateResponse("objects.html", {
