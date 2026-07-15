@@ -2,22 +2,22 @@
 {% set active = 'settings' %}
 {% block title %}Настройки{% endblock %}
 {% block content %}
-<h1 style="margin-bottom: 20px;">Настройки</h1>
+<h1 style="margin-bottom: 20px;">⚙️ Настройки</h1>
 
 <div class="card">
-    <h3 style="margin-bottom: 15px;">Telegram Proxy (SOCKS5)</h3>
+    <h3 style="margin-bottom: 15px;">🌐 Прокси Telegram (SOCKS5)</h3>
     <form method="post" action="/settings">
         <div style="margin-bottom: 15px;">
             <label><strong>URL прокси:</strong></label><br>
-            <input type="text" name="proxy_url" value="{{ settings.get('proxy_url', '') }}" 
+            <input type="text" name="proxy_url" value="{{ settings.get('proxy_url', '') }}"
                    placeholder="socks5://user:pass@host:port" style="max-width: 500px;">
             <p style="color: #666; font-size: 13px; margin-top: 5px;">
                 Формат: socks5://user:pass@host:port или socks5://host:port<br>
                 Оставьте пустым для прямого подключения.
             </p>
         </div>
-        <button type="submit" class="btn btn-primary">Сохранить</button>
+        <button type="submit" class="btn btn-primary">💾 Сохранить</button>
     </form>
-    <p style="color: #999; font-size: 12px; margin-top: 10px;">Для применения необходимо перезапустить бота.</p>
+    <p style="color: #999; font-size: 12px; margin-top: 10px;">⚠️ Для применения необходимо перезапустить бота.</p>
 </div>
 {% endblock %}

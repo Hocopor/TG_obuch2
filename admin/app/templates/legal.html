@@ -2,18 +2,19 @@
 {% set active = 'legal' %}
 {% block title %}Юридические документы{% endblock %}
 {% block content %}
-<h1 style="margin-bottom: 20px;">Юридические документы</h1>
+<h1 style="margin-bottom: 20px;">📄 Юр-документы</h1>
 
 <div class="card">
-    <h3 style="margin-bottom: 15px;">Загрузить документ</h3>
+    <h3 style="margin-bottom: 15px;">📥 Загрузить документ</h3>
     <form method="post" action="/legal/upload" enctype="multipart/form-data">
         <select name="document_type" required style="max-width: 300px; margin-bottom: 10px;">
-            <option value="offer">Оферта</option>
-            <option value="privacy_policy">Политика конфиденциальности</option>
-            <option value="personal_data_policy">Политика персональных данных</option>
+            <option value="offer">📄 Оферта</option>
+            <option value="privacy_policy">🔒 Политика конфиденциальности</option>
+            <option value="personal_data_policy">🔐 Политика персональных данных</option>
+            <option value="free_lessons">📚 Ссылка на бесплатные уроки</option>
         </select><br>
         <input type="file" name="file" required style="margin-bottom: 10px;"><br>
-        <button type="submit" class="btn btn-primary">Загрузить</button>
+        <button type="submit" class="btn btn-primary">📤 Загрузить</button>
     </form>
 </div>
 
@@ -23,17 +24,23 @@
         {% for doc in documents %}
         <tr>
             <td>{{ doc.id }}</td>
-            <td>{{ doc.document_type.value }}</td>
+            <td>
+                {% if doc.document_type.value == 'offer' %}📄 Оферта
+                {% elif doc.document_type.value == 'privacy_policy' %}🔒 Политика конфиденциальности
+                {% elif doc.document_type.value == 'personal_data_policy' %}🔐 Политика ПДн
+                {% elif doc.document_type.value == 'free_lessons' %}📚 Бесплатные уроки
+                {% else %}{{ doc.document_type.value }}{% endif %}
+            </td>
             <td>{{ doc.file_name }}</td>
             <td>{{ doc.uploaded_at.strftime('%d.%m.%Y %H:%M') }}</td>
-            <td>{{ '✓' if doc.is_active else '✗' }}</td>
+            <td>{{ '✅' if doc.is_active else '❌' }}</td>
             <td>
                 {% if not doc.is_active %}
                 <form method="post" action="/legal/{{ doc.id }}/activate" style="display:inline;">
                     <button class="btn btn-success" style="padding: 4px 8px;">Активировать</button>
                 </form>
                 {% endif %}
-                <a href="/legal/{{ doc.id }}/download" class="btn btn-primary" style="padding: 4px 8px;">Скачать</a>
+                <a href="/legal/{{ doc.id }}/download" class="btn btn-primary" style="padding: 4px 8px;">📥 Скачать</a>
             </td>
         </tr>
         {% endfor %}

@@ -2,7 +2,7 @@
 {% set active = 'users' %}
 {% block title %}Пользователь {{ user.telegram_id }}{% endblock %}
 {% block content %}
-<h1 style="margin-bottom: 20px;">Пользователь {{ user.first_name }} {{ user.last_name }}</h1>
+<h1 style="margin-bottom: 20px;">👤 {{ user.first_name or '' }} {{ user.last_name or '' }} (@{{ user.username or 'нет username' }})</h1>
 
 <div class="card">
     <h3>Основная информация</h3>
@@ -10,23 +10,38 @@
     <p><strong>Username:</strong> @{{ user.username or '—' }}</p>
     <p><strong>Имя:</strong> {{ user.first_name or '—' }}</p>
     <p><strong>Фамилия:</strong> {{ user.last_name or '—' }}</p>
-    <p><strong>Цель:</strong> {{ user.goal.value if user.goal else '—' }}</p>
-    <p><strong>Оферта:</strong> {{ '✓' if user.consent_offer else '✗' }}</p>
-    <p><strong>ПДн:</strong> {{ '✓' if user.consent_personal_data else '✗' }}</p>
-    <p><strong>Этап воронки:</strong> {{ user.funnel_stage }}</p>
-    <p><strong>Thread ID:</strong> {{ user.support_thread_id or '—' }}</p>
+    <p><strong>Цель:</strong>
+        {% if user.goal and user.goal.value == 'own_objects' %}🏠 Для своих объектов
+        {% elif user.goal and user.goal.value == 'earn_money' %}💰 Зарабатывать
+        {% elif user.goal and user.goal.value == 'exploring_ai' %}🧠 Изучаю нейросети
+        {% else %}—{% endif %}
+    </p>
+    <p><strong>Оферта:</strong> {{ '✅ Принята' if user.consent_offer else '❌ Не принята' }}</p>
+    <p><strong>ПДн:</strong> {{ '✅ Принята' if user.consent_personal_data else '❌ Не принята' }}</p>
+    <p><strong>Этап воронки:</strong>
+        {% if user.funnel_stage == 'start' %}🟡 Начало
+        {% elif user.funnel_stage == 'offer_accepted' %}📄 Оферта принята
+        {% elif user.funnel_stage == 'consent_done' %}✅ Согласия приняты
+        {% elif user.funnel_stage == 'intro_done' %}📖 Вступление просмотрено
+        {% elif user.funnel_stage == 'goal_selected' %}🎯 Цель выбрана
+        {% elif user.funnel_stage == 'watched_lessons' %}🎓 Уроки просмотрены
+        {% elif user.funnel_stage == 'free_materials_viewed' %}📚 Бесплатные материалы
+        {% elif user.funnel_stage == 'object_submitted' %}🏠 Объект предложен
+        {% else %}{{ user.funnel_stage }}{% endif %}
+    </p>
+    <p><strong>Тема поддержки:</strong> {{ user.support_thread_id or '—' }}</p>
     <p><strong>Регистрация:</strong> {{ user.created_at.strftime('%d.%m.%Y %H:%M') if user.created_at else '—' }}</p>
 </div>
 
 {% if user.consent_logs %}
 <div class="card">
-    <h3>История согласий</h3>
+    <h3>📋 История согласий</h3>
     <table>
         <tr><th>Тип</th><th>Принято</th><th>Дата</th></tr>
         {% for log in user.consent_logs %}
         <tr>
-            <td>{{ log.consent_type.value }}</td>
-            <td>{{ '✓' if log.accepted else '✗' }}</td>
+            <td>{% if log.consent_type.value == 'offer' %}📄 Оферта{% elif log.consent_type.value == 'personal_data' %}🔒 ПДн{% else %}{{ log.consent_type.value }}{% endif %}</td>
+            <td>{{ '✅' if log.accepted else '❌' }}</td>
             <td>{{ log.timestamp.strftime('%d.%m.%Y %H:%M') }}</td>
         </tr>
         {% endfor %}
@@ -36,13 +51,13 @@
 
 {% if user.questions %}
 <div class="card">
-    <h3>Вопросы</h3>
+    <h3>💬 Вопросы</h3>
     <table>
         <tr><th>Текст</th><th>Статус</th><th>Дата</th></tr>
         {% for q in user.questions %}
         <tr>
             <td>{{ q.message_text }}</td>
-            <td>{{ q.status }}</td>
+            <td>{% if q.status == 'pending' %}🟡 Ожидает{% elif q.status == 'answered' %}✅ Отвечено{% else %}{{ q.status }}{% endif %}</td>
             <td>{{ q.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
         </tr>
         {% endfor %}
@@ -52,13 +67,19 @@
 
 {% if user.objects %}
 <div class="card">
-    <h3>Предложенные объекты</h3>
+    <h3>🏠 Предложенные объекты</h3>
     <table>
         <tr><th>Название</th><th>Статус</th><th>Дата</th></tr>
         {% for obj in user.objects %}
         <tr>
-            <td><a href="/objects">{{ obj.object_name }}</a></td>
-            <td><span class="badge badge-{{ obj.status.value }}">{{ obj.status.value }}</span></td>
+            <td><a href="/objects/{{ obj.id }}">{{ obj.object_name }}</a></td>
+            <td><span class="badge badge-{{ obj.status.value }}">
+                {% if obj.status.value == 'pending' %}🟡 Ожидает
+                {% elif obj.status.value == 'accepted' %}✅ Принят
+                {% elif obj.status.value == 'assigned' %}📌 Назначен
+                {% elif obj.status.value == 'rejected' %}❌ Отклонён
+                {% else %}{{ obj.status.value }}{% endif %}
+            </span></td>
             <td>{{ obj.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
         </tr>
         {% endfor %}
@@ -68,7 +89,7 @@
 
 {% if user.events %}
 <div class="card">
-    <h3>Аналитика</h3>
+    <h3>📊 Аналитика</h3>
     <table>
         <tr><th>Событие</th><th>Данные</th><th>Дата</th></tr>
         {% for e in user.events %}

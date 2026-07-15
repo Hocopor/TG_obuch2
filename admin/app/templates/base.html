@@ -31,18 +31,22 @@
         .badge-accepted { background: #28a745; color: #fff; }
         .badge-assigned { background: #007bff; color: #fff; }
         .badge-rejected { background: #dc3545; color: #fff; }
+        .badge-sent { background: #28a745; color: #fff; }
+        .badge-sending { background: #007bff; color: #fff; }
+        .badge-cancelled { background: #6c757d; color: #fff; }
+        .badge-error { background: #dc3545; color: #fff; }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <h2>Админ-панель</h2>
-        <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">Дашборд</a>
-        <a href="/users" class="{% if active == 'users' %}active{% endif %}">Пользователи</a>
-        <a href="/mailings" class="{% if active == 'mailings' %}active{% endif %}">Рассылки</a>
-        <a href="/objects" class="{% if active == 'objects' %}active{% endif %}">Объекты</a>
-        <a href="/legal" class="{% if active == 'legal' %}active{% endif %}">Юр-документы</a>
-        <a href="/settings" class="{% if active == 'settings' %}active{% endif %}">Настройки</a>
-        <a href="/logout">Выход</a>
+        <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">📊 Дашборд</a>
+        <a href="/users" class="{% if active == 'users' %}active{% endif %}">👥 Пользователи</a>
+        <a href="/mailings" class="{% if active == 'mailings' %}active{% endif %}">📨 Рассылки</a>
+        <a href="/objects" class="{% if active == 'objects' %}active{% endif %}">🏠 Объекты</a>
+        <a href="/legal" class="{% if active == 'legal' %}active{% endif %}">📄 Юр-документы</a>
+        <a href="/settings" class="{% if active == 'settings' %}active{% endif %}">⚙️ Настройки</a>
+        <a href="/logout">🚪 Выход</a>
     </div>
     <div class="content">
         {% block content %}{% endblock %}
