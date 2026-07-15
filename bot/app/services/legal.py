@@ -4,6 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.models import LegalDocument, LegalDocTypeEnum
 from shared.config import ADMINKA_URL
 
+# Плейсхолдеры — реальные URL, пока документы не загружены
+PLACEHOLDER_OFFER = "https://example.com/offer"
+PLACEHOLDER_PRIVACY = "https://example.com/privacy"
+PLACEHOLDER_PD = "https://example.com/personal_data"
+PLACEHOLDER_FREE_LESSONS = "https://example.com/free-lessons"
+
 
 async def get_active_document(session: AsyncSession, doc_type: LegalDocTypeEnum):
     result = await session.execute(
@@ -22,7 +28,7 @@ async def get_free_lessons_link(session: AsyncSession):
     doc = await get_active_document(session, LegalDocTypeEnum.free_lessons)
     if doc:
         return f"{ADMINKA_URL}/legal/{doc.id}/download"
-    return ""
+    return PLACEHOLDER_FREE_LESSONS
 
 
 async def get_legal_links(session: AsyncSession):
@@ -30,8 +36,8 @@ async def get_legal_links(session: AsyncSession):
     privacy = await get_active_document(session, LegalDocTypeEnum.privacy_policy)
     pd = await get_active_document(session, LegalDocTypeEnum.personal_data_policy)
 
-    offer_url = f"{ADMINKA_URL}/legal/{offer.id}/download" if offer else "#offer"
-    privacy_url = f"{ADMINKA_URL}/legal/{privacy.id}/download" if privacy else "#privacy"
-    pd_url = f"{ADMINKA_URL}/legal/{pd.id}/download" if pd else "#personal_data"
+    offer_url = f"{ADMINKA_URL}/legal/{offer.id}/download" if offer else PLACEHOLDER_OFFER
+    privacy_url = f"{ADMINKA_URL}/legal/{privacy.id}/download" if privacy else PLACEHOLDER_PRIVACY
+    pd_url = f"{ADMINKA_URL}/legal/{pd.id}/download" if pd else PLACEHOLDER_PD
 
     return offer_url, privacy_url, pd_url

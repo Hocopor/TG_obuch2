@@ -256,9 +256,10 @@ async def goal_selected(callback: CallbackQuery, session: AsyncSession, bot: Bot
 
     await asyncio.sleep(3)
     free_lessons_url = await get_free_lessons_link(session)
-    text = "🎁 Хочешь так же? Держи 4 бесплатных урока!"
-    if free_lessons_url:
-        text += f"\n\n📚 [Бесплатные уроки]({free_lessons_url})"
+    text = (
+        "🎁 Хочешь так же? Держи 4 бесплатных урока!\n\n"
+        f"📚 [Бесплатные уроки]({free_lessons_url})"
+    )
     await bot.send_message(
         chat_id=callback.from_user.id,
         text=text,

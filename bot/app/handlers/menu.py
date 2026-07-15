@@ -68,14 +68,8 @@ async def menu_free_materials(callback: CallbackQuery, session: AsyncSession):
         await session.commit()
 
     free_lessons_url = await get_free_lessons_link(session)
-    if free_lessons_url:
-        text = f"📚 Вот ваши бесплатные материалы:\n\n[Открыть уроки]({free_lessons_url})"
-        await callback.message.answer(text, reply_markup=main_menu_kb(), parse_mode="Markdown")
-    else:
-        await callback.message.answer(
-            "📚 Ссылка на бесплатные материалы пока не добавлена.",
-            reply_markup=main_menu_kb()
-        )
+    text = f"📚 Вот ваши бесплатные материалы:\n\n[Открыть уроки]({free_lessons_url})"
+    await callback.message.answer(text, reply_markup=main_menu_kb(), parse_mode="Markdown")
     await callback.answer()
 
 
