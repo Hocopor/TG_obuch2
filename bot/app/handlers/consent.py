@@ -12,18 +12,18 @@ from ..keyboards import confirm_revoke_kb, main_menu_kb
 router = Router()
 
 
-@router.message(F.text == "Отозвать согласие на обработку ПНд")
+@router.message(F.text.contains("Отозвать согласие"))
 @router.callback_query(F.data == "revoke_start")
 async def revoke_start(event: Message | CallbackQuery):
     if isinstance(event, CallbackQuery):
         await event.message.answer(
-            "Вы уверены? Действие необратимо. Ваши данные будут удалены с сервера",
+            "⚠️ Вы уверены? Действие необратимо.\nВаши данные будут удалены с сервера.",
             reply_markup=confirm_revoke_kb()
         )
         await event.answer()
     else:
         await event.answer(
-            "Вы уверены? Действие необратимо. Ваши данные будут удалены с сервера",
+            "⚠️ Вы уверены? Действие необратимо.\nВаши данные будут удалены с сервера.",
             reply_markup=confirm_revoke_kb()
         )
 
@@ -56,7 +56,7 @@ async def revoke_confirm(callback: CallbackQuery, session: AsyncSession, state: 
 
     await state.clear()
     await callback.message.edit_text(
-        "Ваши данные удалены.",
+        "🗑 Ваши данные удалены.",
         reply_markup=main_menu_kb()
     )
     await callback.answer()

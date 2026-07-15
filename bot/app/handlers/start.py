@@ -1,6 +1,6 @@
 import asyncio
 from aiogram import Router, F, Bot
-from aiogram.types import Message, CallbackQuery, InputFile
+from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.filters import CommandStart
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.models import User, ConsentLog, ConsentTypeEnum, GoalEnum, AnalyticsEvent
 from shared.config import ADMINKA_URL
 from ..keyboards import (
-    consent_offer_kb, consent_pd_kb, next_kb, goal_kb, watched_kb, main_menu_kb
+    consent_offer_kb, consent_offer_done_kb, consent_pd_kb, consent_pd_done_kb,
+    next_kb, goal_kb, watched_kb, main_menu_kb
 )
 from ..states import QuestionState
 from ..services.legal import get_legal_links, get_free_lessons_link
@@ -16,43 +17,47 @@ from ..services.legal import get_legal_links, get_free_lessons_link
 router = Router()
 
 WELCOME_TEXT = (
-    "Хочешь научиться создавать крутые видео, для объектов недвижимости, "
-    "с помощью ИИ, которые набирают миллионы просмотров?\n"
-    "Внутри бесплатные уроки, кейсы, и возможность записаться на обучение к нам!\n\n"
-    "Используй возможность, жми /start"
+    "🎬 Хочешь научиться создавать крутые видео для объектов недвижимости "
+    "с помощью ИИ, которые набирают миллионы просмотров?\n\n"
+    "📚 Внутри бесплатные уроки, кейсы, и возможность записаться на обучение!\n\n"
+    "👇 Используй возможность, жми /start"
 )
 
 
 def get_greeting_text(offer_url: str, privacy_url: str) -> str:
     return (
-        "Приветствуем в нашем боте.\n"
+        "👋 Приветствуем в нашем боте!\n\n"
         "Согласно требований законодательства РФ, для продолжения, "
-        "необходимо ознакомиться и принять "
-        f"[оферту]({offer_url}) и [политику конфиденциальности]({privacy_url})."
+        "необходимо ознакомиться и принять:\n\n"
+        f"📄 [Оферта]({offer_url})\n"
+        f"🔒 [Политика конфиденциальности]({privacy_url})\n\n"
+        "Нажмите кнопку ниже, чтобы принять:"
     )
 
 
 def get_pd_text(pd_url: str) -> str:
     return (
-        "Так же, отдельно необходимо принять "
-        f"[политику персональных данных]({pd_url})."
+        "📄 Также необходимо принять:\n\n"
+        f"🔒 [Политика персональных данных]({pd_url})\n\n"
+        "Нажмите кнопку ниже, чтобы принять:"
     )
 
+
 CONFIRM_TEXT = (
-    "Отлично! Зафиксировали. Продолжаем.\n\n"
-    "Вкратце введу в курс дела.\n\n"
-    "Кто мы?\n"
+    "🎉 Отлично! Зафиксировали. Продолжаем!\n\n"
+    "📝 Вкратце введу в курс дела.\n\n"
+    "👥 Кто мы?\n"
     "Мы команда из двух человек, которая образовалась совершенно случайно.\n"
-    "Я, Андрей - организатор всего этого действия.\n"
+    "Я, Андрей — организатор всего этого действия.\n"
     "Работая риелтором, снимал контент для своих объектов, и искал себе монтажёра.\n"
-    "В результате я нашёл Никиту - автора курса.\n"
+    "В результате я нашёл Никиту — автора курса.\n"
     "Благодаря уникальному подходу Никиты к работе, получались крутые видео, "
     "которые набирали сотни тысяч просмотров.\n"
     "И нам начало поступать много заявок на создание видео для различных объектов, "
     "а так же запросы на обучение такому монтажу.\n"
     "Мы вас услышали, и создали курс, который позволит вам делать такие же видео, "
     "или может даже более крутые видео и зарабатывать на них.\n\n"
-    "Что вы получаете?\n"
+    "🎁 Что вы получаете?\n"
     "Абсолютно БЕСПЛАТНО Вы получаете 4 урока, где узнаете основы, "
     "которые позволят сделать первые шаги и создать первые видео, а так же оценить "
     "подачу материала, и понять, подходит ли вам преподаватель.\n\n"
@@ -60,24 +65,23 @@ CONFIRM_TEXT = (
     "поддержку, сопровождение и даже ПЕРВЫЕ ЗАКАЗЫ!\n\n"
     "Вам будет сразу известна вся программа курса, чтоб вы не покупали кота в мешке, "
     "а знали, что покупаете, ещё до момента покупки!\n\n"
-    "Итого:\n"
-    "- чёткое понимание, что вы покупаете, прощупав на реальных БЕСПЛАТНЫХ уроках\n"
-    "- концентрат знаний от людей, которые не просто сделали видео, ради показухи, "
-    "для обучения. А от людей, которые в реальности делают такие видео и зарабатывают на этом.\n"
-    "- группу поддержки на весь период обучения\n"
-    "- личное наставничество и сопровождение\n"
-    "- возможность получить реальные заказы, от реальных заказчиков (мы предоставим вам заказы)\n\n"
+    "✨ Итого:\n"
+    "✅ Чёткое понимание, что вы покупаете, прощупав на реальных БЕСПЛАТНЫХ уроках\n"
+    "✅ Концентрат знаний от людей, которые реально делают такие видео и зарабатывают на этом\n"
+    "✅ Группу поддержки на весь период обучения\n"
+    "✅ Личное наставничество и сопровождение\n"
+    "✅ Возможность получить реальные заказы от реальных заказчиков\n\n"
     "И на выходе, вы не просто прошли обучение, а получили и отработали ценные навыки "
     "на практике, а так же знаете где найти клиентов. Дальше остаётся просто делать. "
     "Деньги не заставят себя долго ждать...\n"
     "Окупить обучение можно с первого же заказа.\n"
     "Ценник на подобные заказы колеблется в районе 30-50к руб.\n"
     "Вы даже останетесь в плюсе!\n\n"
-    "Готовы начать влиять на свою жизнь, и повернуть её течение в нужную Вам сторону?\n"
-    "Жмите далее!"
+    "🚀 Готовы начать влиять на свою жизнь, и повернуть её течение в нужную Вам сторону?\n"
+    "👇 Жмите далее!"
 )
 
-GOAL_TEXT = "Какая ваша цель?"
+GOAL_TEXT = "🎯 Какая ваша цель?"
 
 
 async def get_or_create_user(session: AsyncSession, message: Message) -> User:
@@ -141,10 +145,15 @@ async def accept_offer(callback: CallbackQuery, session: AsyncSession):
     session.add(event)
 
     await session.commit()
+
+    # Ставим галочку на кнопке оферты
+    await callback.message.edit_reply_markup(reply_markup=consent_offer_done_kb())
+
+    # Отправляем НОВОЕ сообщение про ПДн (не редактируем старое)
     _, _, pd_url = await get_legal_links(session)
     text = get_pd_text(pd_url)
-    await callback.message.edit_text(text, reply_markup=consent_pd_kb(), parse_mode="Markdown")
-    await callback.answer()
+    await callback.message.answer(text, reply_markup=consent_pd_kb(), parse_mode="Markdown")
+    await callback.answer("✅ Оферта принята!")
 
 
 @router.callback_query(F.data == "accept_pd")
@@ -173,7 +182,17 @@ async def accept_pd(callback: CallbackQuery, session: AsyncSession):
     session.add(event)
 
     await session.commit()
-    await callback.message.edit_text(CONFIRM_TEXT, reply_markup=next_kb())
+
+    # Ставим галочку на кнопке ПДн
+    await callback.message.edit_reply_markup(reply_markup=consent_pd_done_kb())
+
+    # Отправляем НОВОЕ сообщение с подтверждением
+    await callback.message.answer(CONFIRM_TEXT, reply_markup=next_kb())
+    await callback.answer("✅ Политика принята!")
+
+
+@router.callback_query(F.data == "noop")
+async def noop(callback: CallbackQuery):
     await callback.answer()
 
 
@@ -189,7 +208,7 @@ async def next_intro(callback: CallbackQuery, session: AsyncSession):
     user.funnel_stage = "intro_done"
     await session.commit()
 
-    await callback.message.edit_text(GOAL_TEXT, reply_markup=goal_kb())
+    await callback.message.answer(GOAL_TEXT, reply_markup=goal_kb())
     await callback.answer()
 
 
@@ -218,31 +237,31 @@ async def goal_selected(callback: CallbackQuery, session: AsyncSession, bot: Bot
     session.add(event)
     await session.commit()
 
-    await callback.message.edit_text(
-        "Для более чёткого представления, что ты сможешь делать по итогам курса, "
-        "вот несколько примеров реальных видео, которые мы делали"
+    await callback.message.answer(
+        "🎬 Для более чёткого представления, что ты сможешь делать по итогам курса, "
+        "вот несколько примеров реальных видео, которые мы делали:"
     )
     await callback.answer()
 
     videos = [
-        ("files/video/видео_пример_1.mov", "Набрал 300000 просмотров", 5),
-        ("files/video/видео_пример_2.mov", "Набрал 350000 просмотров", 20),
-        ("files/video/видео_пример_3.mov", "Набрал 325000 просмотров", 20),
+        ("files/video/видео_пример_1.mov", "🔥 Набрал 300000 просмотров", 5),
+        ("files/video/видео_пример_2.mov", "🔥 Набрал 350000 просмотров", 20),
+        ("files/video/видео_пример_3.mov", "🔥 Набрал 325000 просмотров", 20),
     ]
 
     for path, caption, delay in videos:
         await asyncio.sleep(delay)
         await bot.send_video(
             chat_id=callback.from_user.id,
-            video=InputFile(path),
+            video=FSInputFile(path),
             caption=caption
         )
 
     await asyncio.sleep(3)
     free_lessons_url = await get_free_lessons_link(session)
-    text = "Хочешь так же? Держи 4 бесплатных урока!"
+    text = "🎁 Хочешь так же? Держи 4 бесплатных урока!"
     if free_lessons_url:
-        text += f"\n\n[Бесплатные уроки]({free_lessons_url})"
+        text += f"\n\n📚 [Бесплатные уроки]({free_lessons_url})"
     await bot.send_message(
         chat_id=callback.from_user.id,
         text=text,
@@ -270,7 +289,7 @@ async def watched(callback: CallbackQuery, session: AsyncSession):
     session.add(event)
     await session.commit()
 
-    await callback.message.edit_text("Отлично! Что скажете о наших результатах?")
+    await callback.message.answer("💬 Отлично! Что скажете о наших результатах?")
     await callback.answer()
 
     from .reviews import send_reviews

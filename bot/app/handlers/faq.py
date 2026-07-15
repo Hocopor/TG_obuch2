@@ -6,14 +6,17 @@ from ..keyboards import main_menu_kb
 router = Router()
 
 FAQ_TEXT = (
-    "Частые вопросы:\n"
-    "Сколько вам лет? - 20\n"
-    "Вы женаты? - Да\n"
-    "Есть ли на свете рай? - Да. Это Краснодарский край."
+    "❓ Частые вопросы:\n\n"
+    "👤 Сколько вам лет?\n"
+    "— 20\n\n"
+    "💍 Вы женаты?\n"
+    "— Да\n\n"
+    "🏖 Есть ли на свете рай?\n"
+    "— Да. Это Краснодарский край."
 )
 
 
-@router.message(F.text == "Частые вопросы")
+@router.message(F.text.contains("Частые вопросы"))
 async def faq_text(message: Message):
     await message.answer(FAQ_TEXT, reply_markup=main_menu_kb())
 
