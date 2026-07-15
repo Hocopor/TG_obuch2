@@ -1,6 +1,6 @@
 import asyncio
 from aiogram import Router, F, Bot
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.filters import CommandStart
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -149,7 +149,7 @@ async def accept_offer(callback: CallbackQuery, session: AsyncSession):
     # Ставим галочку на кнопке оферты
     await callback.message.edit_reply_markup(reply_markup=consent_offer_done_kb())
 
-    # Отправляем НОВОЕ сообщение про ПДн (не редактируем старое)
+    # Отправляем НОВОЕ сообщение про ПДн
     _, _, pd_url = await get_legal_links(session)
     text = get_pd_text(pd_url)
     await callback.message.answer(text, reply_markup=consent_pd_kb(), parse_mode="Markdown")
@@ -186,7 +186,7 @@ async def accept_pd(callback: CallbackQuery, session: AsyncSession):
     # Ставим галочку на кнопке ПДн
     await callback.message.edit_reply_markup(reply_markup=consent_pd_done_kb())
 
-    # Отправляем НОВОЕ сообщение с подтверждением
+    # Отправляем НОВОЕ сообщение с подтверждением + главное меню
     await callback.message.answer(CONFIRM_TEXT, reply_markup=next_kb())
     await callback.answer("✅ Политика принята!")
 
@@ -239,7 +239,8 @@ async def goal_selected(callback: CallbackQuery, session: AsyncSession, bot: Bot
 
     await callback.message.answer(
         "🎬 Для более чёткого представления, что ты сможешь делать по итогам курса, "
-        "вот несколько примеров реальных видео, которые мы делали:"
+        "вот несколько примеров реальных видео, которые мы делали:",
+        reply_markup=main_menu_kb()
     )
     await callback.answer()
 
@@ -286,7 +287,6 @@ async def watched(callback: CallbackQuery, session: AsyncSession):
     session.add(event)
     await session.commit()
 
-    await callback.message.answer("💬 Отлично! Что скажете о наших результатах?")
     await callback.answer()
 
     from .reviews import send_reviews
