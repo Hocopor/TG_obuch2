@@ -11,7 +11,6 @@ from ..keyboards import (
     consent_offer_kb, consent_offer_done_kb, consent_pd_kb, consent_pd_done_kb,
     next_kb, goal_kb, watched_kb, main_menu_kb
 )
-from ..states import QuestionState
 from ..services.legal import get_legal_links, get_free_lessons_link
 
 router = Router()

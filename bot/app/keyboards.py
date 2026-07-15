@@ -17,7 +17,6 @@ def main_menu_kb():
     )
     builder.row(
         InlineKeyboardButton(text="❓ Частые вопросы", callback_data="faq"),
-        InlineKeyboardButton(text="✍️ Задать вопрос", callback_data="ask_question")
     )
     builder.row(InlineKeyboardButton(text="🏠 Предложить свой объект", callback_data="start_object"))
     builder.row(InlineKeyboardButton(text="🚫 Отозвать согласие на обработку ПНд", callback_data="revoke_start"))
@@ -86,7 +85,6 @@ def tariffs_kb():
     builder.row(InlineKeyboardButton(text="Купить за 10 900 ₽", url="https://getcourse.example.com/support"))
     builder.row(InlineKeyboardButton(text="Купить за 14 900 ₽", url="https://getcourse.example.com/pro"))
     builder.row(InlineKeyboardButton(text="📊 Сравнить тарифы", callback_data="compare_tariffs"))
-    builder.row(InlineKeyboardButton(text="✍️ Задать вопрос", callback_data="ask_question"))
     builder.row(InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu"))
     return builder.as_markup()
 
@@ -104,13 +102,6 @@ def tariff_select_kb():
 def confirm_revoke_kb():
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="✅ Подтвердить", callback_data="revoke_confirm"))
-    builder.row(InlineKeyboardButton(text="❌ Отмена", callback_data="main_menu"))
-    return builder.as_markup()
-
-
-def send_question_kb():
-    builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="📤 Отправить", callback_data="send_question"))
     builder.row(InlineKeyboardButton(text="❌ Отмена", callback_data="main_menu"))
     return builder.as_markup()
 
