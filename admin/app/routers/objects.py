@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 from sqlalchemy.orm import selectinload
 from shared.models import Object, User, ObjectStatusEnum
+from shared.notifier import notify_customer, notify_performer
 from ..dependencies import get_db, require_auth, templates
 
 router = APIRouter(prefix="/objects", dependencies=[Depends(require_auth)])
@@ -72,6 +73,20 @@ async def object_assign(
         obj.assigned_to = user.id
         obj.status = ObjectStatusEnum.assigned
         await session.commit()
+
+        # Уведомления
+        await session.refresh(obj, ["user", "assigned_user"])
+        if obj.user and obj.user.telegram_id:
+            await notify_customer(obj.user.telegram_id, obj.object_name)
+        if user.telegram_id:
+            await notify_performer(
+                performer_telegram_id=user.telegram_id,
+                object_name=obj.object_name,
+                address=obj.address or "",
+                description=obj.description or "",
+                budget=obj.budget or "",
+                customer_username=obj.user.username if obj.user else "",
+            )
 
     return RedirectResponse(url=f"/objects/{obj_id}", status_code=303)
 
