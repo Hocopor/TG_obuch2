@@ -25,12 +25,14 @@ async def start_object(callback: CallbackQuery, state: FSMContext):
 @router.message(ObjectState.waiting_name)
 async def receive_name(message: Message, state: FSMContext):
     await state.update_data(obj_name=message.text)
+    await state.set_state(ObjectState.waiting_address)
     await message.answer("📍 Укажите адрес объекта:")
 
 
 @router.message(ObjectState.waiting_address)
 async def receive_address(message: Message, state: FSMContext):
     await state.update_data(obj_address=message.text)
+    await state.set_state(ObjectState.waiting_description)
     await message.answer(
         "📝 Опишите, что бы вы хотели видеть в ролике:"
     )
@@ -39,6 +41,7 @@ async def receive_address(message: Message, state: FSMContext):
 @router.message(ObjectState.waiting_description)
 async def receive_description(message: Message, state: FSMContext):
     await state.update_data(obj_description=message.text)
+    await state.set_state(ObjectState.waiting_photos)
     await message.answer(
         "📷 Если есть фото — отправьте ссылки на них\n(ТОЛЬКО ССЫЛКИ, НЕ ФАЙЛЫ!!!)\n\n"
         "Или напишите «нет», чтобы пропустить."
@@ -52,6 +55,7 @@ async def receive_photos(message: Message, state: FSMContext):
         await state.update_data(obj_photos=text)
     else:
         await state.update_data(obj_photos="")
+    await state.set_state(ObjectState.waiting_videos)
     await message.answer(
         "🎬 Если есть видео (особенно с дрона) — отправьте ссылки на них\n(ТОЛЬКО ССЫЛКИ, НЕ ФАЙЛЫ!!!)\n\n"
         "Или напишите «нет», чтобы пропустить."
@@ -65,6 +69,7 @@ async def receive_videos(message: Message, state: FSMContext):
         await state.update_data(obj_videos=text)
     else:
         await state.update_data(obj_videos="")
+    await state.set_state(ObjectState.waiting_budget)
     await message.answer("💰 Сколько вы готовы заплатить?")
 
 
