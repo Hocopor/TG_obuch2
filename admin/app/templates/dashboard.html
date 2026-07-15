@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Дашборд — Админ-панель{% endblock %}
+{% set active = 'dashboard' %}
+{% block content %}
+<h1 style="margin-bottom: 20px;">Дашборд</h1>
+
+<div class="card">
+    <h3 style="margin-bottom: 15px;">Общая статистика</h3>
+    <div class="stat"><div class="stat-value">{{ total_users }}</div><div class="stat-label">Пользователей</div></div>
+    <div class="stat"><div class="stat-value">{{ total_objects }}</div><div class="stat-label">Объектов</div></div>
+    <div class="stat"><div class="stat-value">{{ pending_objects }}</div><div class="stat-label">Ожидают</div></div>
+    <div class="stat"><div class="stat-value">{{ total_mailings }}</div><div class="stat-label">Рассылок</div></div>
+    <div class="stat"><div class="stat-value">{{ total_questions }}</div><div class="stat-label">Вопросов</div></div>
+</div>
+
+<div class="card">
+    <h3 style="margin-bottom: 15px;">Воронка</h3>
+    <div class="stat"><div class="stat-value">{{ consent_done }}</div><div class="stat-label">Приняли согласия</div></div>
+    <div class="stat"><div class="stat-value">{{ goal_selected }}</div><div class="stat-label">Выбрали цель</div></div>
+</div>
+
+<div class="card">
+    <h3 style="margin-bottom: 15px;">По целям</h3>
+    <div class="stat"><div class="stat-value">{{ own_objects }}</div><div class="stat-label">Для своих объектов</div></div>
+    <div class="stat"><div class="stat-value">{{ earn_money }}</div><div class="stat-label">Зарабатывать</div></div>
+    <div class="stat"><div class="stat-value">{{ exploring_ai }}</div><div class="stat-label">Изучаю нейросети</div></div>
+</div>
+{% endblock %}

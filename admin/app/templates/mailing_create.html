@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% set active = 'mailings' %}
+{% block title %}Создать рассылку{% endblock %}
+{% block content %}
+<h1 style="margin-bottom: 20px;">Создать рассылку</h1>
+<div class="card">
+    <form method="post" action="/mailings/create">
+        <div style="margin-bottom: 15px;">
+            <label><strong>Текст рассылки:</strong></label><br>
+            <textarea name="message_text" required style="width: 100%; max-width: 600px; min-height: 150px;">{{ message_text or '' }}</textarea>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label><strong>Категория:</strong></label><br>
+            <select name="target_category" required>
+                <option value="all" {{ 'selected' if target_category == 'all' }}>Все</option>
+                <option value="own_objects" {{ 'selected' if target_category == 'own_objects' }}>Для своих объектов</option>
+                <option value="earn_money" {{ 'selected' if target_category == 'earn_money' }}>Зарабатывать</option>
+                <option value="exploring_ai" {{ 'selected' if target_category == 'exploring_ai' }}>Изучаю нейросети</option>
+            </select>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label><strong>Дата и время отправки</strong> (оставьте пустым для немедленной отправки):</label><br>
+            <input type="datetime-local" name="scheduled_at" value="{{ scheduled_at or '' }}">
+        </div>
+        <button type="submit" class="btn btn-primary">Создать</button>
+        <a href="/mailings" class="btn" style="margin-left: 10px;">Отмена</a>
+    </form>
+</div>
+{% endblock %}

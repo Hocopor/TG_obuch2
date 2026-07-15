@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% set active = 'objects' %}
+{% block title %}Объекты{% endblock %}
+{% block content %}
+<h1 style="margin-bottom: 20px;">Объекты</h1>
+<div class="card">
+    <table>
+        <tr><th>ID</th><th>Название</th><th>Адрес</th><th>Статус</th><th>Пользователь</th><th>Дата</th></tr>
+        {% for obj in objects %}
+        <tr>
+            <td><a href="/objects/{{ obj.id }}">{{ obj.id }}</a></td>
+            <td>{{ obj.object_name }}</td>
+            <td>{{ (obj.address or '—')[:50] }}</td>
+            <td><span class="badge badge-{{ obj.status.value }}">{{ obj.status.value }}</span></td>
+            <td><a href="/users/{{ obj.user.telegram_id }}">{{ obj.user.first_name }} {{ obj.user.last_name }}</a></td>
+            <td>{{ obj.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

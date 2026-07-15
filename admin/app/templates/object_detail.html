@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% set active = 'objects' %}
+{% block title %}Объект {{ obj.object_name }}{% endblock %}
+{% block content %}
+<h1 style="margin-bottom: 20px;">{{ obj.object_name }}</h1>
+
+<div class="card">
+    <h3>Информация</h3>
+    <p><strong>Адрес:</strong> {{ obj.address or '—' }}</p>
+    <p><strong>Описание:</strong> {{ obj.description or '—' }}</p>
+    <p><strong>Фото:</strong> {{ obj.photo_links or '—' }}</p>
+    <p><strong>Видео:</strong> {{ obj.video_links or '—' }}</p>
+    <p><strong>Бюджет:</strong> {{ obj.budget or '—' }}</p>
+    <p><strong>Статус:</strong> <span class="badge badge-{{ obj.status.value }}">{{ obj.status.value }}</span></p>
+    <p><strong>Назначен:</strong> {{ obj.assigned_user.first_name ~ ' ' ~ obj.assigned_user.last_name if obj.assigned_user else '—' }}</p>
+    <p><strong>Заметки:</strong> {{ obj.admin_notes or '—' }}</p>
+    <p><strong>Пользователь:</strong> <a href="/users/{{ obj.user.telegram_id }}">{{ obj.user.first_name }} {{ obj.user.last_name }} (@{{ obj.user.username }})</a></p>
+    <p><strong>Дата:</strong> {{ obj.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+</div>
+
+{% if obj.status.value == 'pending' %}
+<div class="card">
+    <h3>Назначить</h3>
+    <form method="post" action="/objects/{{ obj.id }}/assign" style="display: flex; gap: 10px; align-items: center;">
+        <input type="text" name="assigned_to" placeholder="ID или @username" style="max-width: 250px;">
+        <button type="submit" class="btn btn-success">Назначить</button>
+    </form>
+</div>
+<div class="card">
+    <h3>Отклонить</h3>
+    <form method="post" action="/objects/{{ obj.id }}/reject">
+        <button type="submit" class="btn btn-danger">Отклонить</button>
+    </form>
+</div>
+{% endif %}
+
+<a href="/objects/{{ obj.id }}/download" class="btn btn-primary" style="margin-top: 10px;">Скачать информацию</a>
+<a href="/objects" class="btn" style="margin-left: 10px; margin-top: 10px;">← Назад к списку</a>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% set active = 'mailings' %}
+{% block title %}Рассылки{% endblock %}
+{% block content %}
+<h1 style="margin-bottom: 20px;">Рассылки</h1>
+<a href="/mailings/create" class="btn btn-primary" style="margin-bottom: 15px;">Создать рассылку</a>
+<div class="card">
+    <table>
+        <tr><th>ID</th><th>Текст</th><th>Категория</th><th>Статус</th><th>Создана</th><th>Запланирована</th><th>Действия</th></tr>
+        {% for m in mailings %}
+        <tr>
+            <td>{{ m.id }}</td>
+            <td>{{ m.message_text[:50] }}{% if m.message_text|length > 50 %}...{% endif %}</td>
+            <td>{{ m.target_category.value }}</td>
+            <td><span class="badge badge-{{ m.status.value }}">{{ m.status.value }}</span></td>
+            <td>{{ m.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+            <td>{{ m.scheduled_at.strftime('%d.%m.%Y %H:%M') if m.scheduled_at else 'Сейчас' }}</td>
+            <td>
+                {% if m.status.value == 'pending' %}
+                <form method="post" action="/mailings/{{ m.id }}/cancel" style="display:inline;">
+                    <button class="btn btn-danger" style="padding: 4px 8px;">Отменить</button>
+                </form>
+                {% endif %}
+                <form method="post" action="/mailings/{{ m.id }}/repeat" style="display:inline;">
+                    <button class="btn btn-primary" style="padding: 4px 8px;">Повторить</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

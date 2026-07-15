@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% set active = 'users' %}
+{% block title %}Пользователь {{ user.telegram_id }}{% endblock %}
+{% block content %}
+<h1 style="margin-bottom: 20px;">Пользователь {{ user.first_name }} {{ user.last_name }}</h1>
+
+<div class="card">
+    <h3>Основная информация</h3>
+    <p><strong>Telegram ID:</strong> {{ user.telegram_id }}</p>
+    <p><strong>Username:</strong> @{{ user.username or '—' }}</p>
+    <p><strong>Имя:</strong> {{ user.first_name or '—' }}</p>
+    <p><strong>Фамилия:</strong> {{ user.last_name or '—' }}</p>
+    <p><strong>Цель:</strong> {{ user.goal.value if user.goal else '—' }}</p>
+    <p><strong>Оферта:</strong> {{ '✓' if user.consent_offer else '✗' }}</p>
+    <p><strong>ПДн:</strong> {{ '✓' if user.consent_personal_data else '✗' }}</p>
+    <p><strong>Этап воронки:</strong> {{ user.funnel_stage }}</p>
+    <p><strong>Thread ID:</strong> {{ user.support_thread_id or '—' }}</p>
+    <p><strong>Регистрация:</strong> {{ user.created_at.strftime('%d.%m.%Y %H:%M') if user.created_at else '—' }}</p>
+</div>
+
+{% if user.consent_logs %}
+<div class="card">
+    <h3>История согласий</h3>
+    <table>
+        <tr><th>Тип</th><th>Принято</th><th>Дата</th></tr>
+        {% for log in user.consent_logs %}
+        <tr>
+            <td>{{ log.consent_type.value }}</td>
+            <td>{{ '✓' if log.accepted else '✗' }}</td>
+            <td>{{ log.timestamp.strftime('%d.%m.%Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+{% if user.questions %}
+<div class="card">
+    <h3>Вопросы</h3>
+    <table>
+        <tr><th>Текст</th><th>Статус</th><th>Дата</th></tr>
+        {% for q in user.questions %}
+        <tr>
+            <td>{{ q.message_text }}</td>
+            <td>{{ q.status }}</td>
+            <td>{{ q.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+{% if user.objects %}
+<div class="card">
+    <h3>Предложенные объекты</h3>
+    <table>
+        <tr><th>Название</th><th>Статус</th><th>Дата</th></tr>
+        {% for obj in user.objects %}
+        <tr>
+            <td><a href="/objects">{{ obj.object_name }}</a></td>
+            <td><span class="badge badge-{{ obj.status.value }}">{{ obj.status.value }}</span></td>
+            <td>{{ obj.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+{% if user.events %}
+<div class="card">
+    <h3>Аналитика</h3>
+    <table>
+        <tr><th>Событие</th><th>Данные</th><th>Дата</th></tr>
+        {% for e in user.events %}
+        <tr>
+            <td>{{ e.event_type }}</td>
+            <td>{{ e.metadata_ }}</td>
+            <td>{{ e.timestamp.strftime('%d.%m.%Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+<a href="/users" class="btn btn-primary">← Назад к списку</a>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% set active = 'users' %}
+{% block title %}Пользователи{% endblock %}
+{% block content %}
+<h1 style="margin-bottom: 20px;">Пользователи</h1>
+<div class="card">
+    <form method="get" style="margin-bottom: 15px;">
+        <input type="text" name="q" value="{{ q or '' }}" placeholder="Поиск по имени, username, ID..." style="max-width: 300px;">
+        <button type="submit" class="btn btn-primary" style="margin-left: 5px;">Найти</button>
+    </form>
+    <table>
+        <tr><th>ID</th><th>Username</th><th>Имя</th><th>Фамилия</th><th>Цель</th><th>Этап</th><th>Дата</th></tr>
+        {% for user in users %}
+        <tr>
+            <td><a href="/users/{{ user.telegram_id }}">{{ user.telegram_id }}</a></td>
+            <td>@{{ user.username or '—' }}</td>
+            <td>{{ user.first_name or '—' }}</td>
+            <td>{{ user.last_name or '—' }}</td>
+            <td>{{ user.goal.value if user.goal else '—' }}</td>
+            <td>{{ user.funnel_stage }}</td>
+            <td>{{ user.created_at.strftime('%d.%m.%Y %H:%M') if user.created_at else '—' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

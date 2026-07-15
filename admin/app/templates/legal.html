@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% set active = 'legal' %}
+{% block title %}Юридические документы{% endblock %}
+{% block content %}
+<h1 style="margin-bottom: 20px;">Юридические документы</h1>
+
+<div class="card">
+    <h3 style="margin-bottom: 15px;">Загрузить документ</h3>
+    <form method="post" action="/legal/upload" enctype="multipart/form-data">
+        <select name="document_type" required style="max-width: 300px; margin-bottom: 10px;">
+            <option value="offer">Оферта</option>
+            <option value="privacy_policy">Политика конфиденциальности</option>
+            <option value="personal_data_policy">Политика персональных данных</option>
+        </select><br>
+        <input type="file" name="file" required style="margin-bottom: 10px;"><br>
+        <button type="submit" class="btn btn-primary">Загрузить</button>
+    </form>
+</div>
+
+<div class="card">
+    <table>
+        <tr><th>ID</th><th>Тип</th><th>Файл</th><th>Загружен</th><th>Активен</th><th>Действия</th></tr>
+        {% for doc in documents %}
+        <tr>
+            <td>{{ doc.id }}</td>
+            <td>{{ doc.document_type.value }}</td>
+            <td>{{ doc.file_name }}</td>
+            <td>{{ doc.uploaded_at.strftime('%d.%m.%Y %H:%M') }}</td>
+            <td>{{ '✓' if doc.is_active else '✗' }}</td>
+            <td>
+                {% if not doc.is_active %}
+                <form method="post" action="/legal/{{ doc.id }}/activate" style="display:inline;">
+                    <button class="btn btn-success" style="padding: 4px 8px;">Активировать</button>
+                </form>
+                {% endif %}
+                <a href="/legal/{{ doc.id }}/download" class="btn btn-primary" style="padding: 4px 8px;">Скачать</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}
