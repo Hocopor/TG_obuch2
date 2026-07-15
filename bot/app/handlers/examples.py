@@ -10,9 +10,9 @@ router = Router()
 async def send_examples(message: Message, bot=None):
     from ..services.cache import send_cached_video
     videos = [
-        ("files/video/видео_пример_1.mov", "🔥 Набрал 300000 просмотров", 5),
-        ("files/video/видео_пример_2.mov", "🔥 Набрал 350000 просмотров", 20),
-        ("files/video/видео_пример_3.mov", "🔥 Набрал 325000 просмотров", 20),
+        ("files/video/видео_пример_1.mp4", "🔥 Набрал 300000 просмотров", 5),
+        ("files/video/видео_пример_2.mp4", "🔥 Набрал 350000 просмотров", 20),
+        ("files/video/видео_пример_3.mp4", "🔥 Набрал 325000 просмотров", 20),
     ]
 
     for path, caption, delay in videos:

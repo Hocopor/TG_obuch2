@@ -3,6 +3,7 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.client.session.aiohttp import AiohttpSession
+import aiohttp
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
 from shared.config import TELEGRAM_BOT_TOKEN
@@ -49,7 +50,8 @@ async def main():
 
     if proxy_url:
         logger.info("Using proxy: %s", proxy_url)
-        session = AiohttpSession(proxy=proxy_url)
+        timeout = aiohttp.ClientTimeout(total=300, connect=30)
+        session = AiohttpSession(proxy=proxy_url, timeout=timeout)
         bot = Bot(token=TELEGRAM_BOT_TOKEN, session=session)
     else:
         logger.info("No proxy configured")
