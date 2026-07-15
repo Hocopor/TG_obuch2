@@ -50,6 +50,7 @@ class LegalDocTypeEnum(str, enum.Enum):
     offer = "offer"
     privacy_policy = "privacy_policy"
     personal_data_policy = "personal_data_policy"
+    free_lessons = "free_lessons"
 
 
 class User(Base):

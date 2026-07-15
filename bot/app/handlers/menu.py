@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.models import User
 from ..keyboards import main_menu_kb, tariff_select_kb, about_course_kb, program_kb
+from ..services.legal import get_free_lessons_link
 
 router = Router()
 
@@ -66,10 +67,15 @@ async def free_materials(message: Message, session: AsyncSession):
         user.funnel_stage = "free_materials_viewed"
         await session.commit()
 
-    await message.answer(
-        "Вот ваши бесплатные материалы: #free_lessons",
-        reply_markup=main_menu_kb()
-    )
+    free_lessons_url = await get_free_lessons_link(session)
+    if free_lessons_url:
+        text = f"Вот ваши бесплатные материалы:\n[Открыть]({free_lessons_url})"
+        await message.answer(text, reply_markup=main_menu_kb(), parse_mode="Markdown")
+    else:
+        await message.answer(
+            "Вот ваши бесплатные материалы: #free_lessons",
+            reply_markup=main_menu_kb()
+        )
 
 
 @router.message(F.text == "Записаться на курс")

@@ -7,9 +7,20 @@ from shared.config import TELEGRAM_BOT_TOKEN
 from shared.database import init_db
 from .handlers import register_handlers
 from .middlewares import DbMiddleware
+from .services.mailing import process_mailings, check_new_orders
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+async def mailing_loop(bot: Bot):
+    while True:
+        try:
+            await process_mailings(bot)
+            await check_new_orders(bot)
+        except Exception as e:
+            logger.error("Mailing loop error: %s", e)
+        await asyncio.sleep(60)
 
 
 async def main():
@@ -27,6 +38,8 @@ async def main():
     dp.update.middleware(DbMiddleware())
 
     register_handlers(dp)
+
+    asyncio.create_task(mailing_loop(bot))
 
     logger.info("Bot started")
     await dp.start_polling(bot)

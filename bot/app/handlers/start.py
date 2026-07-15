@@ -6,17 +6,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.models import User, ConsentLog, ConsentTypeEnum, GoalEnum, AnalyticsEvent
+from shared.config import ADMINKA_URL
 from ..keyboards import (
     consent_offer_kb, consent_pd_kb, next_kb, goal_kb, watched_kb, main_menu_kb
 )
 from ..states import QuestionState
+from ..services.legal import get_legal_links, get_free_lessons_link
 
 router = Router()
-
-FREE_LESSONS_LINK = "#free_lessons"
-OFFER_LINK = "#offer"
-PRIVACY_LINK = "#privacy"
-PERSONAL_DATA_LINK = "#personal_data"
 
 WELCOME_TEXT = (
     "Хочешь научиться создавать крутые видео, для объектов недвижимости, "
@@ -25,17 +22,21 @@ WELCOME_TEXT = (
     "Используй возможность, жми /start"
 )
 
-GREETING_TEXT = (
-    "Приветствуем в нашем боте.\n"
-    "Согласно требований законодательства РФ, для продолжения, "
-    "необходимо ознакомиться и принять "
-    f"[оферту]({OFFER_LINK}) и [политику конфиденциальности]({PRIVACY_LINK})."
-)
 
-PD_TEXT = (
-    "Так же, отдельно необходимо принять "
-    f"[политику персональных данных]({PERSONAL_DATA_LINK})."
-)
+def get_greeting_text(offer_url: str, privacy_url: str) -> str:
+    return (
+        "Приветствуем в нашем боте.\n"
+        "Согласно требований законодательства РФ, для продолжения, "
+        "необходимо ознакомиться и принять "
+        f"[оферту]({offer_url}) и [политику конфиденциальности]({privacy_url})."
+    )
+
+
+def get_pd_text(pd_url: str) -> str:
+    return (
+        "Так же, отдельно необходимо принять "
+        f"[политику персональных данных]({pd_url})."
+    )
 
 CONFIRM_TEXT = (
     "Отлично! Зафиксировали. Продолжаем.\n\n"
@@ -101,10 +102,13 @@ async def get_or_create_user(session: AsyncSession, message: Message) -> User:
 @router.message(CommandStart())
 async def cmd_start(message: Message, session: AsyncSession):
     user = await get_or_create_user(session, message)
+    offer_url, privacy_url, pd_url = await get_legal_links(session)
     if not user.consent_offer:
-        await message.answer(GREETING_TEXT, reply_markup=consent_offer_kb(), parse_mode="Markdown")
+        text = get_greeting_text(offer_url, privacy_url)
+        await message.answer(text, reply_markup=consent_offer_kb(), parse_mode="Markdown")
     elif not user.consent_personal_data:
-        await message.answer(PD_TEXT, reply_markup=consent_pd_kb(), parse_mode="Markdown")
+        text = get_pd_text(pd_url)
+        await message.answer(text, reply_markup=consent_pd_kb(), parse_mode="Markdown")
     else:
         user.funnel_stage = "consent_done"
         await session.commit()
@@ -137,7 +141,9 @@ async def accept_offer(callback: CallbackQuery, session: AsyncSession):
     session.add(event)
 
     await session.commit()
-    await callback.message.edit_text(PD_TEXT, reply_markup=consent_pd_kb(), parse_mode="Markdown")
+    _, _, pd_url = await get_legal_links(session)
+    text = get_pd_text(pd_url)
+    await callback.message.edit_text(text, reply_markup=consent_pd_kb(), parse_mode="Markdown")
     await callback.answer()
 
 
@@ -233,10 +239,15 @@ async def goal_selected(callback: CallbackQuery, session: AsyncSession, bot: Bot
         )
 
     await asyncio.sleep(3)
+    free_lessons_url = await get_free_lessons_link(session)
+    text = "Хочешь так же? Держи 4 бесплатных урока!"
+    if free_lessons_url:
+        text += f"\n\n[Бесплатные уроки]({free_lessons_url})"
     await bot.send_message(
         chat_id=callback.from_user.id,
-        text="Хочешь так же? Держи 4 бесплатных урока!",
-        reply_markup=watched_kb()
+        text=text,
+        reply_markup=watched_kb(),
+        parse_mode="Markdown",
     )
 
 

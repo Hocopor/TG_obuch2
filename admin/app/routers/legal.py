@@ -7,13 +7,17 @@ from sqlalchemy import select, update
 from shared.models import LegalDocument, LegalDocTypeEnum
 from ..dependencies import get_db, require_auth, templates
 
-router = APIRouter(prefix="/legal", dependencies=[Depends(require_auth)])
+router = APIRouter(prefix="/legal")
 
 UPLOAD_DIR = Path(__file__).parent.parent.parent.parent / "uploads"
 
 
 @router.get("")
-async def legal_list(request: Request, session: AsyncSession = Depends(get_db)):
+async def legal_list(
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+    _auth: bool = Depends(require_auth),
+):
     result = await session.execute(
         select(LegalDocument).order_by(LegalDocument.uploaded_at.desc())
     )
@@ -30,6 +34,7 @@ async def legal_upload(
     session: AsyncSession = Depends(get_db),
     document_type: str = "",
     file: UploadFile = File(...),
+    _auth: bool = Depends(require_auth),
 ):
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -61,6 +66,7 @@ async def legal_activate(
     request: Request,
     doc_id: int,
     session: AsyncSession = Depends(get_db),
+    _auth: bool = Depends(require_auth),
 ):
     result = await session.execute(
         select(LegalDocument).where(LegalDocument.id == doc_id)
