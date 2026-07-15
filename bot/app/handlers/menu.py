@@ -57,15 +57,10 @@ async def main_menu_callback(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(F.text.contains("Главное меню"))
-async def main_menu_text(message: Message):
-    await message.answer("🏠 Главное меню", reply_markup=main_menu_kb())
-
-
-@router.message(F.text.contains("Бесплатные материалы"))
-async def free_materials(message: Message, session: AsyncSession):
+@router.callback_query(F.data == "menu_free_materials")
+async def menu_free_materials(callback: CallbackQuery, session: AsyncSession):
     result = await session.execute(
-        select(User).where(User.telegram_id == message.from_user.id)
+        select(User).where(User.telegram_id == callback.from_user.id)
     )
     user = result.scalar_one_or_none()
     if user:
@@ -75,17 +70,19 @@ async def free_materials(message: Message, session: AsyncSession):
     free_lessons_url = await get_free_lessons_link(session)
     if free_lessons_url:
         text = f"📚 Вот ваши бесплатные материалы:\n\n[Открыть уроки]({free_lessons_url})"
-        await message.answer(text, reply_markup=main_menu_kb(), parse_mode="Markdown")
+        await callback.message.answer(text, reply_markup=main_menu_kb(), parse_mode="Markdown")
     else:
-        await message.answer(
+        await callback.message.answer(
             "📚 Ссылка на бесплатные материалы пока не добавлена.",
             reply_markup=main_menu_kb()
         )
+    await callback.answer()
 
 
-@router.message(F.text.contains("Записаться на курс"))
-async def enroll_text(message: Message):
-    await message.answer("🎓 Выберите тариф:", reply_markup=tariff_select_kb())
+@router.callback_query(F.data == "menu_enroll")
+async def menu_enroll(callback: CallbackQuery):
+    await callback.message.answer("🎓 Выберите тариф:", reply_markup=tariff_select_kb())
+    await callback.answer()
 
 
 @router.callback_query(F.data == "enroll")
@@ -94,17 +91,20 @@ async def enroll_callback(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(F.text.contains("О курсе"))
-async def about_course(message: Message):
-    await message.answer(ABOUT_COURSE_TEXT, reply_markup=about_course_kb())
-
-
-@router.message(F.text.contains("Программа"))
-async def program(message: Message):
-    await message.answer(PROGRAM_TEXT, reply_markup=program_kb())
+@router.callback_query(F.data == "menu_about")
+async def menu_about(callback: CallbackQuery):
+    await callback.message.answer(ABOUT_COURSE_TEXT, reply_markup=about_course_kb())
+    await callback.answer()
 
 
 @router.callback_query(F.data == "program")
 async def program_callback(callback: CallbackQuery):
     await callback.message.answer(PROGRAM_TEXT, reply_markup=program_kb())
+    await callback.answer()
+
+
+@router.callback_query(F.data == "menu_examples")
+async def menu_examples(callback: CallbackQuery):
+    from .examples import send_examples
+    await send_examples(callback.message)
     await callback.answer()

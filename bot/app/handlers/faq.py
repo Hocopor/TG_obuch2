@@ -16,11 +16,6 @@ FAQ_TEXT = (
 )
 
 
-@router.message(F.text.contains("Частые вопросы"))
-async def faq_text(message: Message):
-    await message.answer(FAQ_TEXT, reply_markup=main_menu_kb())
-
-
 @router.callback_query(F.data == "faq")
 async def faq_callback(callback: CallbackQuery):
     await callback.message.answer(FAQ_TEXT, reply_markup=main_menu_kb())

@@ -12,22 +12,14 @@ from ..keyboards import send_question_kb, main_menu_kb
 router = Router()
 
 
-@router.message(F.text.contains("Задать вопрос"))
 @router.callback_query(F.data == "ask_question")
-async def ask_question(event: Message | CallbackQuery, state: FSMContext, session: AsyncSession):
-    if isinstance(event, CallbackQuery):
-        await event.message.answer(
-            "✍️ Введите свой вопрос.\nОтвет поступит в этот же бот.",
-            reply_markup=send_question_kb()
-        )
-        await event.answer()
-    else:
-        await event.answer(
-            "✍️ Введите свой вопрос.\nОтвет поступит в этот же бот.",
-            reply_markup=send_question_kb()
-        )
-
+async def ask_question(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    await callback.message.answer(
+        "✍️ Введите свой вопрос.\nОтвет поступит в этот же бот.",
+        reply_markup=send_question_kb()
+    )
     await state.set_state(QuestionState.waiting_text)
+    await callback.answer()
 
 
 @router.callback_query(F.data == "send_question")

@@ -1,17 +1,27 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
-from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 def main_menu_kb():
-    builder = ReplyKeyboardBuilder()
-    builder.row(KeyboardButton(text="📚 Бесплатные материалы"))
-    builder.row(KeyboardButton(text="🎓 Записаться на курс"))
-    builder.row(KeyboardButton(text="ℹ️ О курсе"), KeyboardButton(text="📋 Программа"))
-    builder.row(KeyboardButton(text="🎬 Примеры работ"), KeyboardButton(text="💬 Отзывы"))
-    builder.row(KeyboardButton(text="❓ Частые вопросы"), KeyboardButton(text="✍️ Задать вопрос"))
-    builder.row(KeyboardButton(text="🏠 Предложить свой объект"))
-    builder.row(KeyboardButton(text="🚫 Отозвать согласие на обработку ПНд"))
-    return builder.as_markup(resize_keyboard=True)
+    """Главное меню — инлайн-кнопки в сообщении."""
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="📚 Бесплатные материалы", callback_data="menu_free_materials"))
+    builder.row(InlineKeyboardButton(text="🎓 Записаться на курс", callback_data="menu_enroll"))
+    builder.row(
+        InlineKeyboardButton(text="ℹ️ О курсе", callback_data="menu_about"),
+        InlineKeyboardButton(text="📋 Программа", callback_data="program")
+    )
+    builder.row(
+        InlineKeyboardButton(text="🎬 Примеры работ", callback_data="menu_examples"),
+        InlineKeyboardButton(text="💬 Отзывы", callback_data="reviews")
+    )
+    builder.row(
+        InlineKeyboardButton(text="❓ Частые вопросы", callback_data="faq"),
+        InlineKeyboardButton(text="✍️ Задать вопрос", callback_data="ask_question")
+    )
+    builder.row(InlineKeyboardButton(text="🏠 Предложить свой объект", callback_data="start_object"))
+    builder.row(InlineKeyboardButton(text="🚫 Отозвать согласие на обработку ПНд", callback_data="revoke_start"))
+    return builder.as_markup()
 
 
 def welcome_kb():
