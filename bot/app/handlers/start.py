@@ -1,6 +1,6 @@
 import asyncio
 from aiogram import Router, F, Bot
-from aiogram.types import Message, CallbackQuery, FSInputFile
+from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -249,13 +249,10 @@ async def goal_selected(callback: CallbackQuery, session: AsyncSession, bot: Bot
         ("files/video/видео_пример_3.mov", "🔥 Набрал 325000 просмотров", 20),
     ]
 
+    from ..services.cache import send_cached_video
     for path, caption, delay in videos:
         await asyncio.sleep(delay)
-        await bot.send_video(
-            chat_id=callback.from_user.id,
-            video=FSInputFile(path),
-            caption=caption
-        )
+        await send_cached_video(bot, callback.from_user.id, path, caption)
 
     await asyncio.sleep(3)
     free_lessons_url = await get_free_lessons_link(session)

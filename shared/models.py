@@ -180,3 +180,13 @@ class Settings(Base):
     key = Column(String(255), unique=True, nullable=False)
     value = Column(Text, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class CachedFile(Base):
+    __tablename__ = "cached_files"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    file_path = Column(String(500), unique=True, nullable=False)
+    file_id = Column(Text, nullable=False)
+    file_type = Column(String(20), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

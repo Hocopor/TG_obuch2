@@ -1,5 +1,5 @@
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, FSInputFile
+from aiogram.types import Message, CallbackQuery
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -60,6 +60,7 @@ async def course_detail(callback: CallbackQuery):
 
 @router.callback_query(F.data == "compare_tariffs")
 async def compare_tariffs(callback: CallbackQuery):
+    from ..services.cache import send_cached_photo
     await callback.message.answer(TARIFF_SELF_TEXT)
     from asyncio import sleep
     await sleep(1)
@@ -67,9 +68,10 @@ async def compare_tariffs(callback: CallbackQuery):
     await sleep(1)
     await callback.message.answer(TARIFF_PRO_TEXT)
 
-    await callback.message.answer_photo(
-        photo=FSInputFile("files/images/сравнительнаятаблица.png"),
-        caption="📊 Сравнение тарифов:",
+    await send_cached_photo(
+        callback.message.bot, callback.message.chat.id,
+        "files/images/сравнительнаятаблица.png",
+        "📊 Сравнение тарифов:",
         reply_markup=tariff_select_kb()
     )
     await callback.answer()
@@ -77,6 +79,7 @@ async def compare_tariffs(callback: CallbackQuery):
 
 @router.message(F.text.contains("Узнать тарифы"))
 async def learn_tariffs(message: Message):
+    from ..services.cache import send_cached_photo
     await message.answer(TARIFF_SELF_TEXT)
     from asyncio import sleep
     await sleep(1)
@@ -84,8 +87,9 @@ async def learn_tariffs(message: Message):
     await sleep(1)
     await message.answer(TARIFF_PRO_TEXT)
 
-    await message.answer_photo(
-        photo=FSInputFile("files/images/сравнительнаятаблица.png"),
-        caption="📊 Сравнение тарифов:",
+    await send_cached_photo(
+        message.bot, message.chat.id,
+        "files/images/сравнительнаятаблица.png",
+        "📊 Сравнение тарифов:",
         reply_markup=tariff_select_kb()
     )

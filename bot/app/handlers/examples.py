@@ -1,6 +1,6 @@
 import asyncio
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, FSInputFile
+from aiogram.types import Message, CallbackQuery
 
 from ..keyboards import after_examples_kb
 
@@ -8,6 +8,7 @@ router = Router()
 
 
 async def send_examples(message: Message, bot=None):
+    from ..services.cache import send_cached_video
     videos = [
         ("files/video/видео_пример_1.mov", "🔥 Набрал 300000 просмотров", 5),
         ("files/video/видео_пример_2.mov", "🔥 Набрал 350000 просмотров", 20),
@@ -16,10 +17,7 @@ async def send_examples(message: Message, bot=None):
 
     for path, caption, delay in videos:
         await asyncio.sleep(delay)
-        await message.answer_video(
-            video=FSInputFile(path),
-            caption=caption
-        )
+        await send_cached_video(message.bot, message.chat.id, path, caption)
 
     await asyncio.sleep(3)
     await message.answer(
