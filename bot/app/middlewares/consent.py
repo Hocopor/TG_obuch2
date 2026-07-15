@@ -1,11 +1,13 @@
+import logging
 from typing import Callable, Dict, Any, Awaitable
 from aiogram import BaseMiddleware
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.models import User
 from shared.database import async_session
+
+logger = logging.getLogger(__name__)
 
 # Callback_data, которые разрешены без согласий
 ALLOWED_CALLBACKS = {
@@ -77,10 +79,13 @@ class ConsentMiddleware(BaseMiddleware):
             )
             kb = consent_pd_kb()
 
-        if isinstance(event, CallbackQuery):
-            await event.message.answer(text, reply_markup=kb, parse_mode="Markdown")
-            await event.answer()
-        else:
-            await event.answer(text, reply_markup=kb, parse_mode="Markdown")
+        try:
+            if isinstance(event, CallbackQuery):
+                await event.message.answer(text, reply_markup=kb, parse_mode="Markdown")
+                await event.answer()
+            else:
+                await event.answer(text, reply_markup=kb, parse_mode="Markdown")
+        except Exception as e:
+            logger.warning("ConsentMiddleware: failed to send consent prompt: %s", e)
 
         return None
