@@ -1,8 +1,11 @@
+import logging
 import httpx
 from sqlalchemy import select
 from shared.config import TELEGRAM_BOT_TOKEN
 from shared.database import async_session
 from shared.models import Settings
+
+logger = logging.getLogger(__name__)
 
 API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 
@@ -17,22 +20,28 @@ async def _get_proxy_url() -> str | None:
             setting = result.scalar_one_or_none()
             if setting and setting.value:
                 return setting.value
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error("Failed to get proxy from DB: %s", e)
     return None
 
 
 async def send_message(chat_id: int, text: str) -> bool:
     """Отправляет текстовое сообщение пользователю в Telegram."""
     proxy_url = await _get_proxy_url()
+    logger.info("Notifier: sending to chat_id=%s, proxy=%s", chat_id, proxy_url)
     try:
         async with httpx.AsyncClient(proxy=proxy_url, timeout=15) as client:
             resp = await client.post(
                 f"{API_URL}/sendMessage",
                 json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
             )
-            return resp.status_code == 200
-    except Exception:
+            if resp.status_code != 200:
+                logger.error("Notifier: Telegram API error %s: %s", resp.status_code, resp.text)
+                return False
+            logger.info("Notifier: message sent to chat_id=%s", chat_id)
+            return True
+    except Exception as e:
+        logger.error("Notifier: failed to send to chat_id=%s: %s", chat_id, e)
         return False
 
 

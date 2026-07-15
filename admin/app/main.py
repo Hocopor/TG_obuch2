@@ -1,8 +1,11 @@
+import logging
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from shared.database import init_db
 from .routers import auth, dashboard, users, mailings, objects, legal, settings
+
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="Admin Panel")
 
