@@ -1,17 +1,39 @@
 import httpx
+from sqlalchemy import select
 from shared.config import TELEGRAM_BOT_TOKEN
+from shared.database import async_session
+from shared.models import Settings
 
 API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 
 
+async def _get_proxy_url() -> str | None:
+    """Получает URL прокси из БД."""
+    try:
+        async with async_session() as session:
+            result = await session.execute(
+                select(Settings).where(Settings.key == "proxy_url")
+            )
+            setting = result.scalar_one_or_none()
+            if setting and setting.value:
+                return setting.value
+    except Exception:
+        pass
+    return None
+
+
 async def send_message(chat_id: int, text: str) -> bool:
     """Отправляет текстовое сообщение пользователю в Telegram."""
-    async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.post(
-            f"{API_URL}/sendMessage",
-            json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
-        )
-        return resp.status_code == 200
+    proxy_url = await _get_proxy_url()
+    try:
+        async with httpx.AsyncClient(proxy=proxy_url, timeout=15) as client:
+            resp = await client.post(
+                f"{API_URL}/sendMessage",
+                json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
+            )
+            return resp.status_code == 200
+    except Exception:
+        return False
 
 
 async def notify_customer(customer_telegram_id: int, object_name: str):
