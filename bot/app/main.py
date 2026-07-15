@@ -9,7 +9,7 @@ from shared.config import TELEGRAM_BOT_TOKEN
 from shared.database import init_db, async_session
 from shared.models import Settings
 from .handlers import register_handlers
-from .middlewares import DbMiddleware
+from .middlewares import DbMiddleware, ConsentMiddleware
 from .services.mailing import process_mailings, check_new_orders
 
 logging.basicConfig(level=logging.INFO)
@@ -64,6 +64,8 @@ async def main():
     dp['bot'] = bot
 
     dp.update.middleware(DbMiddleware())
+    dp.message.middleware(ConsentMiddleware())
+    dp.callback_query.middleware(ConsentMiddleware())
     register_handlers(dp)
 
     asyncio.create_task(mailing_loop(bot))
