@@ -32,6 +32,42 @@ async def get_proxy_url():
     return os.getenv("PROXY_URL", "")
 
 
+async def proxy_watcher(bot: Bot, current_proxy: str, interval: int = 10):
+    """Подхватывает смену прокси из админки без рестарта бота.
+
+    Раз в `interval` секунд читает proxy_url из БД; при изменении пересобирает
+    bot.session на лету (новый AiohttpSession с новым/без прокси) и закрывает старую.
+    Висящий long-poll на старой сессии оборвётся — polling-цикл aiogram сам
+    переподключится уже через новую сессию.
+    """
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            new_proxy = await get_proxy_url()
+        except Exception as e:
+            logger.error("proxy_watcher: не смог прочитать прокси из БД: %s", e)
+            continue
+        if new_proxy == current_proxy:
+            continue
+
+        logger.info("Прокси изменён (%r -> %r) — пересобираю сессию бота", current_proxy, new_proxy)
+        old_session = bot.session
+        try:
+            if new_proxy:
+                bot.session = AiohttpSession(proxy=new_proxy, timeout=300)
+            else:
+                bot.session = AiohttpSession(timeout=300)
+        except Exception as e:
+            logger.error("proxy_watcher: не смог создать новую сессию (%r): %s", new_proxy, e)
+            continue
+        current_proxy = new_proxy
+
+        try:
+            await old_session.close()
+        except Exception:
+            pass
+
+
 async def mailing_loop(bot: Bot):
     while True:
         try:
@@ -93,6 +129,7 @@ async def main():
         await s.commit()
 
     mailing_task = asyncio.create_task(mailing_loop(bot))
+    proxy_task = asyncio.create_task(proxy_watcher(bot, proxy_url))
 
     logger.info("Bot started")
     await dp.start_polling(bot)
