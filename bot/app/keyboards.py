@@ -113,7 +113,6 @@ def confirm_revoke_kb():
 
 def question_kb():
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="📤 Отправить", callback_data="question_send"))
     builder.row(InlineKeyboardButton(text="❌ Отмена", callback_data="main_menu"))
     return builder.as_markup()
 
