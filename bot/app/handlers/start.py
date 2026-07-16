@@ -172,7 +172,23 @@ async def accept_all(callback: CallbackQuery, session: AsyncSession):
     )
     user = result.scalar_one_or_none()
     if not user:
-        return
+        # Пользователь мог быть удалён при отзыве согласия — пересоздаём
+        user = User(
+            telegram_id=callback.from_user.id,
+            username=callback.from_user.username,
+            first_name=callback.from_user.first_name,
+            last_name=callback.from_user.last_name,
+            funnel_stage="start",
+        )
+        session.add(user)
+        try:
+            await session.commit()
+            await session.refresh(user)
+        except IntegrityError:
+            await session.rollback()
+            user = (await session.execute(
+                select(User).where(User.telegram_id == callback.from_user.id)
+            )).scalar_one()
 
     user.consent_offer = True
     user.consent_personal_data = True
