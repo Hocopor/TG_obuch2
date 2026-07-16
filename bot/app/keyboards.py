@@ -24,33 +24,21 @@ def main_menu_kb():
     return builder.as_markup()
 
 
-def welcome_kb():
+def consent_kb():
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="/start", callback_data="start"))
+    builder.row(InlineKeyboardButton(text="✅ Принять", callback_data="accept_all"))
     return builder.as_markup()
 
 
-def consent_offer_kb():
-    builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="✅ Принять", callback_data="accept_offer"))
-    return builder.as_markup()
-
-
-def consent_offer_done_kb():
+def consent_done_kb():
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="✅ Принято", callback_data="noop"))
     return builder.as_markup()
 
 
-def consent_pd_kb():
+def home_kb():
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="✅ Принять", callback_data="accept_pd"))
-    return builder.as_markup()
-
-
-def consent_pd_done_kb():
-    builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="✅ Принято", callback_data="noop"))
+    builder.row(InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu"))
     return builder.as_markup()
 
 
@@ -62,9 +50,9 @@ def next_kb():
 
 def goal_kb():
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="🏠 Хочу делать ролики для своих объектов", callback_data="goal_own_objects"))
-    builder.row(InlineKeyboardButton(text="💰 Хочу зарабатывать на создании роликов", callback_data="goal_earn_money"))
-    builder.row(InlineKeyboardButton(text="🧠 Пока просто изучаю нейросети", callback_data="goal_exploring_ai"))
+    builder.row(InlineKeyboardButton(text="🏠 Продавать свои объекты", callback_data="goal_own_objects"))
+    builder.row(InlineKeyboardButton(text="💼 Зарабатывать на роликах", callback_data="goal_earn_money"))
+    builder.row(InlineKeyboardButton(text="🧠 Освоить нейросети", callback_data="goal_exploring_ai"))
     return builder.as_markup()
 
 
@@ -80,24 +68,39 @@ def course_detail_kb():
     return builder.as_markup()
 
 
-def tariffs_kb():
+def tariff_msg_kb(buy_url: str, price: str):
+    """Клавиатура под каждым тарифным сообщением внутри «Сравнить тарифы»."""
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="Купить за 7 900 ₽", url="https://getcourse.example.com/self"))
-    builder.row(InlineKeyboardButton(text="Купить за 10 900 ₽", url="https://getcourse.example.com/support"))
-    builder.row(InlineKeyboardButton(text="Купить за 14 900 ₽", url="https://getcourse.example.com/pro"))
-    builder.row(InlineKeyboardButton(text="📊 Сравнить тарифы", callback_data="compare_tariffs"))
+    builder.row(InlineKeyboardButton(text=f"Купить за {price} ₽", url=buy_url))
+    builder.row(InlineKeyboardButton(text="✍️ Задать вопрос", callback_data="ask_question"))
+    return builder.as_markup()
+
+
+def tariff_select_kb(urls: dict):
+    """«Выберите тариф» для раздела «Записаться на курс» (menu_enroll)."""
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="Самостоятельный", url=urls["self"]))
+    builder.row(InlineKeyboardButton(text="С поддержкой", url=urls["support"]))
+    builder.row(InlineKeyboardButton(text="PRO", url=urls["pro"]))
+    builder.row(InlineKeyboardButton(text="📊 Подробнее о тарифах", callback_data="compare_tariffs"))
+    builder.row(InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu"))
+    return builder.as_markup()
+
+
+def tariff_final_kb(urls: dict):
+    """«Выберите тариф» в конце «Сравнить тарифы» (без «Подробнее» — чтобы не зациклить)."""
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="Самостоятельный", url=urls["self"]))
+    builder.row(InlineKeyboardButton(text="С поддержкой", url=urls["support"]))
+    builder.row(InlineKeyboardButton(text="PRO", url=urls["pro"]))
     builder.row(InlineKeyboardButton(text="✍️ Задать вопрос", callback_data="ask_question"))
     builder.row(InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu"))
     return builder.as_markup()
 
 
-def tariff_select_kb():
+def learn_tariffs_kb():
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="Самостоятельный", url="https://getcourse.example.com/self"))
-    builder.row(InlineKeyboardButton(text="С поддержкой", url="https://getcourse.example.com/support"))
-    builder.row(InlineKeyboardButton(text="PRO", url="https://getcourse.example.com/pro"))
-    builder.row(InlineKeyboardButton(text="📊 Подробнее о тарифах", callback_data="compare_tariffs"))
-    builder.row(InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu"))
+    builder.row(InlineKeyboardButton(text="💰 Узнать тарифы", callback_data="compare_tariffs"))
     return builder.as_markup()
 
 
@@ -110,13 +113,34 @@ def confirm_revoke_kb():
 
 def question_kb():
     builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="📤 Отправить", callback_data="question_send"))
     builder.row(InlineKeyboardButton(text="❌ Отмена", callback_data="main_menu"))
+    return builder.as_markup()
+
+
+def obj_cancel_kb():
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="❌ Отмена", callback_data="obj_cancel"))
+    return builder.as_markup()
+
+
+def obj_skip_kb():
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="➡️ Далее", callback_data="obj_skip"))
+    builder.row(InlineKeyboardButton(text="❌ Отмена", callback_data="obj_cancel"))
+    return builder.as_markup()
+
+
+def obj_submit_kb():
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="✅ Отправить", callback_data="obj_submit"))
+    builder.row(InlineKeyboardButton(text="❌ Отмена", callback_data="obj_cancel"))
     return builder.as_markup()
 
 
 def after_examples_kb():
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="🎓 Записаться на курс", callback_data="enroll"))
+    builder.row(InlineKeyboardButton(text="🎓 Записаться на курс", callback_data="menu_enroll"))
     builder.row(InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu"))
     return builder.as_markup()
 
@@ -131,7 +155,7 @@ def about_course_kb():
 
 def program_kb():
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="🎓 Записаться на курс", callback_data="enroll"))
+    builder.row(InlineKeyboardButton(text="🎓 Записаться на курс", callback_data="menu_enroll"))
     builder.row(InlineKeyboardButton(text="💰 Тарифы", callback_data="compare_tariffs"))
     builder.row(InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu"))
     return builder.as_markup()

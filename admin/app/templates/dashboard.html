@@ -8,7 +8,7 @@
     <h3 style="margin-bottom: 15px;">Общая статистика</h3>
     <div class="stat"><div class="stat-value">{{ total_users }}</div><div class="stat-label">Пользователей</div></div>
     <div class="stat"><div class="stat-value">{{ total_objects }}</div><div class="stat-label">Объектов</div></div>
-    <div class="stat"><div class="stat-value">{{ pending_objects }}</div><div class="stat-label">Ожидают</div></div>
+    <div class="stat"><div class="stat-value">{{ pending_objects }}</div><div class="stat-label">Ожидают назначения</div></div>
     <div class="stat"><div class="stat-value">{{ total_mailings }}</div><div class="stat-label">Рассылок</div></div>
     <div class="stat"><div class="stat-value">{{ total_questions }}</div><div class="stat-label">Вопросов</div></div>
 </div>
@@ -17,6 +17,20 @@
     <h3 style="margin-bottom: 15px;">Воронка</h3>
     <div class="stat"><div class="stat-value">{{ consent_done }}</div><div class="stat-label">Приняли согласия</div></div>
     <div class="stat"><div class="stat-value">{{ goal_selected }}</div><div class="stat-label">Выбрали цель</div></div>
+</div>
+
+<div class="card">
+    <h3 style="margin-bottom: 15px;">Воронка по этапам</h3>
+    <table>
+        <tr><th>Этап</th><th>Дошли</th><th>Конверсия к пред.</th></tr>
+        {% for row in funnel %}
+        <tr>
+            <td>{{ stage_ru(row.stage) }}</td>
+            <td>{{ row.count }}</td>
+            <td>{% if row.conv is not none %}{{ row.conv }}%{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </table>
 </div>
 
 <div class="card">

@@ -4,13 +4,13 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.client.session.aiohttp import AiohttpSession
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from sqlalchemy import select
-from shared.config import TELEGRAM_BOT_TOKEN
-from shared.database import init_db, async_session
+from sqlalchemy import select, text
+from shared.config import TELEGRAM_BOT_TOKEN, ADMINKA_URL
+from shared.database import async_session
 from shared.models import Settings
 from .handlers import register_handlers
 from .middlewares import DbMiddleware, ConsentMiddleware
-from .services.mailing import process_mailings, check_new_orders
+from .services.mailing import process_mailings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,14 +36,34 @@ async def mailing_loop(bot: Bot):
     while True:
         try:
             await process_mailings(bot)
-            await check_new_orders(bot)
         except Exception as e:
             logger.error("Mailing loop error: %s", e)
         await asyncio.sleep(60)
 
 
+async def wait_for_db(max_wait: int = 60):
+    """Ждёт, пока admin создаст таблицы (create_all делает только admin)."""
+    import time
+    start = time.monotonic()
+    while True:
+        try:
+            async with async_session() as session:
+                await session.execute(text("SELECT 1 FROM users LIMIT 1"))
+            logger.info("DB is ready")
+            return
+        except Exception as e:
+            if time.monotonic() - start > max_wait:
+                raise RuntimeError(
+                    f"БД не инициализирована за {max_wait} сек (таблицы должен создать admin). Последняя ошибка: {e}"
+                )
+            logger.info("Waiting for DB to be initialized by admin...")
+            await asyncio.sleep(2)
+
+
 async def main():
-    await init_db()
+    if not ADMINKA_URL:
+        raise RuntimeError("Не задана обязательная переменная окружения ADMINKA_URL")
+    await wait_for_db()
 
     proxy_url = await get_proxy_url()
 
@@ -68,7 +88,11 @@ async def main():
     dp.callback_query.middleware(ConsentMiddleware())
     register_handlers(dp)
 
-    asyncio.create_task(mailing_loop(bot))
+    async with async_session() as s:
+        await s.execute(text("UPDATE mailings SET status='pending' WHERE status='sending'"))
+        await s.commit()
+
+    mailing_task = asyncio.create_task(mailing_loop(bot))
 
     logger.info("Bot started")
     await dp.start_polling(bot)

@@ -18,19 +18,9 @@
     </p>
     <p><strong>Оферта:</strong> {{ '✅ Принята' if user.consent_offer else '❌ Не принята' }}</p>
     <p><strong>ПДн:</strong> {{ '✅ Принята' if user.consent_personal_data else '❌ Не принята' }}</p>
-    <p><strong>Этап воронки:</strong>
-        {% if user.funnel_stage == 'start' %}🟡 Начало
-        {% elif user.funnel_stage == 'offer_accepted' %}📄 Оферта принята
-        {% elif user.funnel_stage == 'consent_done' %}✅ Согласия приняты
-        {% elif user.funnel_stage == 'intro_done' %}📖 Вступление просмотрено
-        {% elif user.funnel_stage == 'goal_selected' %}🎯 Цель выбрана
-        {% elif user.funnel_stage == 'watched_lessons' %}🎓 Уроки просмотрены
-        {% elif user.funnel_stage == 'free_materials_viewed' %}📚 Бесплатные материалы
-        {% elif user.funnel_stage == 'object_submitted' %}🏠 Объект предложен
-        {% else %}{{ user.funnel_stage }}{% endif %}
-    </p>
+    <p><strong>Этап воронки:</strong> {{ stage_ru(user.funnel_stage) }}</p>
     <p><strong>Тема поддержки:</strong> {{ user.support_thread_id or '—' }}</p>
-    <p><strong>Регистрация:</strong> {{ user.created_at.strftime('%d.%m.%Y %H:%M') if user.created_at else '—' }}</p>
+    <p><strong>Регистрация:</strong> {{ user.created_at | msk }}</p>
 </div>
 
 {% if user.consent_logs %}
@@ -42,7 +32,7 @@
         <tr>
             <td>{% if log.consent_type.value == 'offer' %}📄 Оферта{% elif log.consent_type.value == 'personal_data' %}🔒 ПДн{% else %}{{ log.consent_type.value }}{% endif %}</td>
             <td>{{ '✅' if log.accepted else '❌' }}</td>
-            <td>{{ log.timestamp.strftime('%d.%m.%Y %H:%M') }}</td>
+            <td>{{ log.timestamp | msk }}</td>
         </tr>
         {% endfor %}
     </table>
@@ -58,7 +48,7 @@
         <tr>
             <td>{{ q.message_text }}</td>
             <td>{% if q.status == 'pending' %}🟡 Ожидает{% elif q.status == 'answered' %}✅ Отвечено{% else %}{{ q.status }}{% endif %}</td>
-            <td>{{ q.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+            <td>{{ q.created_at | msk }}</td>
         </tr>
         {% endfor %}
     </table>
@@ -80,7 +70,7 @@
                 {% elif obj.status.value == 'rejected' %}❌ Отклонён
                 {% else %}{{ obj.status.value }}{% endif %}
             </span></td>
-            <td>{{ obj.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+            <td>{{ obj.created_at | msk }}</td>
         </tr>
         {% endfor %}
     </table>
@@ -96,7 +86,24 @@
         <tr>
             <td>{{ e.event_type }}</td>
             <td>{{ e.metadata_ }}</td>
-            <td>{{ e.timestamp.strftime('%d.%m.%Y %H:%M') }}</td>
+            <td>{{ e.timestamp | msk }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+{% if user.mailing_logs %}
+<div class="card">
+    <h3>📨 История рассылок</h3>
+    <table>
+        <tr><th>Рассылка</th><th>Статус</th><th>Дата</th><th>Ошибка</th></tr>
+        {% for log in user.mailing_logs %}
+        <tr>
+            <td>#{{ log.mailing_id }}</td>
+            <td>{% if log.status.value == 'sent' %}✅ Доставлено{% else %}❌ Ошибка{% endif %}</td>
+            <td>{{ log.sent_at | msk }}</td>
+            <td>{{ log.error_message or '—' }}</td>
         </tr>
         {% endfor %}
     </table>

@@ -11,7 +11,6 @@
             <option value="offer">📄 Оферта</option>
             <option value="privacy_policy">🔒 Политика конфиденциальности</option>
             <option value="personal_data_policy">🔐 Политика персональных данных</option>
-            <option value="free_lessons">📚 Ссылка на бесплатные уроки</option>
         </select><br>
         <input type="file" name="file" required style="margin-bottom: 10px;"><br>
         <button type="submit" class="btn btn-primary">📤 Загрузить</button>
@@ -32,7 +31,7 @@
                 {% else %}{{ doc.document_type.value }}{% endif %}
             </td>
             <td>{{ doc.file_name }}</td>
-            <td>{{ doc.uploaded_at.strftime('%d.%m.%Y %H:%M') }}</td>
+            <td>{{ doc.uploaded_at | msk }}</td>
             <td>{{ '✅' if doc.is_active else '❌' }}</td>
             <td>
                 {% if not doc.is_active %}

@@ -1,11 +1,12 @@
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery
-from sqlalchemy import select
+from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.models import User
 from ..keyboards import main_menu_kb, tariff_select_kb, about_course_kb, program_kb
 from ..services.legal import get_free_lessons_link
+from ..services.app_settings import get_tariff_urls
+from ..services.delayed import run_detached
 
 router = Router()
 
@@ -52,21 +53,14 @@ PROGRAM_TEXT = (
 
 
 @router.callback_query(F.data == "main_menu")
-async def main_menu_callback(callback: CallbackQuery):
+async def main_menu_callback(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
     await callback.message.answer("🏠 Главное меню", reply_markup=main_menu_kb())
     await callback.answer()
 
 
 @router.callback_query(F.data == "menu_free_materials")
 async def menu_free_materials(callback: CallbackQuery, session: AsyncSession):
-    result = await session.execute(
-        select(User).where(User.telegram_id == callback.from_user.id)
-    )
-    user = result.scalar_one_or_none()
-    if user:
-        user.funnel_stage = "free_materials_viewed"
-        await session.commit()
-
     free_lessons_url = await get_free_lessons_link(session)
     text = f"📚 Вот ваши бесплатные материалы:\n\n[Открыть уроки]({free_lessons_url})"
     await callback.message.answer(text, reply_markup=main_menu_kb(), parse_mode="Markdown")
@@ -74,14 +68,9 @@ async def menu_free_materials(callback: CallbackQuery, session: AsyncSession):
 
 
 @router.callback_query(F.data == "menu_enroll")
-async def menu_enroll(callback: CallbackQuery):
-    await callback.message.answer("🎓 Выберите тариф:", reply_markup=tariff_select_kb())
-    await callback.answer()
-
-
-@router.callback_query(F.data == "enroll")
-async def enroll_callback(callback: CallbackQuery):
-    await callback.message.answer("🎓 Выберите тариф:", reply_markup=tariff_select_kb())
+async def menu_enroll(callback: CallbackQuery, session: AsyncSession):
+    urls = await get_tariff_urls(session)
+    await callback.message.answer("🎓 Выберите тариф:", reply_markup=tariff_select_kb(urls))
     await callback.answer()
 
 
@@ -98,7 +87,7 @@ async def program_callback(callback: CallbackQuery):
 
 
 @router.callback_query(F.data == "menu_examples")
-async def menu_examples(callback: CallbackQuery):
-    from .examples import send_examples
-    await send_examples(callback.message)
+async def menu_examples(callback: CallbackQuery, bot: Bot):
     await callback.answer()
+    from .examples import send_menu_examples
+    run_detached(send_menu_examples(bot, callback.from_user.id))

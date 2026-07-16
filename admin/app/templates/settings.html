@@ -16,6 +16,29 @@
                 Оставьте пустым для прямого подключения.
             </p>
         </div>
+        <div style="margin-bottom: 15px;">
+            <label><strong>Ссылка на бесплатные уроки:</strong></label><br>
+            <input type="text" name="free_lessons_url" value="{{ settings.get('free_lessons_url', '') }}"
+                   placeholder="https://..." style="max-width: 500px;">
+            <p style="color: #666; font-size: 13px; margin-top: 5px;">
+                Внешняя ссылка, которую бот отправляет в блоке «4 бесплатных урока».
+            </p>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label><strong>Ссылка на тариф «Самостоятельный»:</strong></label><br>
+            <input type="text" name="tariff_self_url" value="{{ settings.get('tariff_self_url', '') }}"
+                   placeholder="https://getcourse..." style="max-width: 500px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label><strong>Ссылка на тариф «С поддержкой»:</strong></label><br>
+            <input type="text" name="tariff_support_url" value="{{ settings.get('tariff_support_url', '') }}"
+                   placeholder="https://getcourse..." style="max-width: 500px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label><strong>Ссылка на тариф «PRO»:</strong></label><br>
+            <input type="text" name="tariff_pro_url" value="{{ settings.get('tariff_pro_url', '') }}"
+                   placeholder="https://getcourse..." style="max-width: 500px;">
+        </div>
         <button type="submit" class="btn btn-primary">💾 Сохранить</button>
     </form>
     <p style="color: #999; font-size: 12px; margin-top: 10px;">⚠️ Для применения необходимо перезапустить бота.</p>

@@ -5,7 +5,7 @@
 <h1 style="margin-bottom: 20px;">Пользователи</h1>
 <div class="card">
     <form method="get" style="margin-bottom: 15px;">
-        <input type="text" name="q" value="{{ q or '' }}" placeholder="Поиск по имени, username, ID..." style="max-width: 300px;">
+        <input type="text" name="q" value="{{ q or '' }}" placeholder="Поиск по имени, username, телефону, ID..." style="max-width: 300px;">
         <button type="submit" class="btn btn-primary" style="margin-left: 5px;">Найти</button>
     </form>
     <table>
@@ -16,11 +16,16 @@
             <td>@{{ user.username or '—' }}</td>
             <td>{{ user.first_name or '—' }}</td>
             <td>{{ user.last_name or '—' }}</td>
-            <td>{{ user.goal.value if user.goal else '—' }}</td>
-            <td>{{ user.funnel_stage }}</td>
-            <td>{{ user.created_at.strftime('%d.%m.%Y %H:%M') if user.created_at else '—' }}</td>
+            <td>{{ goal_ru(user.goal) }}</td>
+            <td>{{ stage_ru(user.funnel_stage) }}</td>
+            <td>{{ user.created_at | msk }}</td>
         </tr>
         {% endfor %}
     </table>
+    <div style="margin-top:15px;">
+        {% if has_prev %}<a class="btn btn-primary" href="?page={{ page-1 }}{% if q %}&q={{ q }}{% endif %}">← Назад</a>{% endif %}
+        <span style="margin:0 10px;">Страница {{ page }}</span>
+        {% if has_next %}<a class="btn btn-primary" href="?page={{ page+1 }}{% if q %}&q={{ q }}{% endif %}">Вперёд →</a>{% endif %}
+    </div>
 </div>
 {% endblock %}

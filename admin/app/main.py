@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
@@ -7,7 +8,15 @@ from .routers import auth, dashboard, users, mailings, objects, legal, settings
 
 logging.basicConfig(level=logging.INFO)
 
-app = FastAPI(title="Admin Panel")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    app.state.admin_token = None
+    yield
+
+
+app = FastAPI(title="Admin Panel", lifespan=lifespan)
 
 static_dir = Path(__file__).parent / "static"
 static_dir.mkdir(exist_ok=True)
@@ -20,9 +29,3 @@ app.include_router(mailings.router)
 app.include_router(objects.router)
 app.include_router(legal.router)
 app.include_router(settings.router)
-
-
-@app.on_event("startup")
-async def startup():
-    await init_db()
-    app.state.admin_token = None

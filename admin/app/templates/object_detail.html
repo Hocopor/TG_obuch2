@@ -4,6 +4,15 @@
 {% block content %}
 <h1 style="margin-bottom: 20px;">🏠 {{ obj.object_name }}</h1>
 
+{% if obj.cancelled %}
+<div class="card" style="border-left:4px solid red;">
+    <span style="color:red;font-weight:bold;font-size:18px;">⚠️ ПОЛЬЗОВАТЕЛЬ ОТМЕНИЛ ЗАПОЛНЕНИЕ АНКЕТЫ</span>
+</div>
+{% endif %}
+{% if error == 'user_not_found' %}<div class="error">Пользователь не найден. Проверьте ID/username.</div>{% endif %}
+{% if error == 'is_rejected' %}<div class="error">Нельзя назначить отклонённый объект. Сначала верните его в «Принят».</div>{% endif %}
+{% if error == 'is_assigned' %}<div class="error">Нельзя отклонить назначенный объект. Сначала верните его в «Принят».</div>{% endif %}
+
 <div class="card">
     <h3>Информация</h3>
     <p><strong>Адрес:</strong> {{ obj.address or '—' }}</p>
@@ -18,17 +27,22 @@
         {% elif obj.status.value == 'rejected' %}❌ Отклонён
         {% else %}{{ obj.status.value }}{% endif %}
     </span></p>
-    <p><strong>Назначен:</strong> {{ obj.assigned_user.first_name ~ ' ' ~ obj.assigned_user.last_name if obj.assigned_user else '—' }}</p>
+    <p><strong>Назначен:</strong> {{ full_name(obj.assigned_user) }}</p>
     <p><strong>Заметки:</strong> {{ obj.admin_notes or '—' }}</p>
-    <p><strong>Пользователь:</strong> <a href="/users/{{ obj.user.telegram_id }}">{{ obj.user.first_name }} {{ obj.user.last_name }} (@{{ obj.user.username }})</a></p>
-    <p><strong>Дата:</strong> {{ obj.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+    <p><strong>Пользователь:</strong> <a href="/users/{{ obj.user.telegram_id }}">{{ full_name(obj.user) }} (@{{ obj.user.username or '—' }})</a></p>
+    <p><strong>Дата:</strong> {{ obj.created_at | msk }}</p>
 </div>
 
-{% if obj.status.value == 'pending' %}
+{% if obj.status.value == 'accepted' or obj.status.value == 'pending' %}
 <div class="card">
     <h3>📌 Назначить объект</h3>
-    <form method="post" action="/objects/{{ obj.id }}/assign" style="display: flex; gap: 10px; align-items: center;">
-        <input type="text" name="assigned_to" placeholder="ID или @username пользователя" style="max-width: 300px;">
+    <form method="post" action="/objects/{{ obj.id }}/assign" style="display:flex; gap:10px; align-items:center;">
+        <input list="users-list" name="assigned_to" placeholder="ID или @username" style="max-width:300px;" autocomplete="off">
+        <datalist id="users-list">
+            {% for u in all_users %}
+            <option value="{{ u.telegram_id }}">{{ u.telegram_id }} — @{{ u.username or 'нет' }} — {{ full_name(u) }}</option>
+            {% endfor %}
+        </datalist>
         <button type="submit" class="btn btn-success">Назначить</button>
     </form>
 </div>
@@ -36,6 +50,14 @@
     <h3>❌ Отклонить объект</h3>
     <form method="post" action="/objects/{{ obj.id }}/reject">
         <button type="submit" class="btn btn-danger">Отклонить</button>
+    </form>
+</div>
+{% elif obj.status.value == 'assigned' or obj.status.value == 'rejected' %}
+<div class="card">
+    <h3>↩️ Вернуть в «Принят»</h3>
+    <p style="margin-bottom:10px;color:#666;">Снимет текущее {{ 'назначение' if obj.status.value == 'assigned' else 'отклонение' }} и вернёт объект в статус «Принят».</p>
+    <form method="post" action="/objects/{{ obj.id }}/reset">
+        <button type="submit" class="btn btn-primary">Вернуть в «Принят»</button>
     </form>
 </div>
 {% endif %}

@@ -4,7 +4,7 @@
 {% block content %}
 <h1 style="margin-bottom: 20px;">Создать рассылку</h1>
 <div class="card">
-    <form method="post" action="/mailings/create">
+    <form method="post" action="/mailings/create" onsubmit="this.querySelector('button[type=submit]').disabled=true; return true;">
         <div style="margin-bottom: 15px;">
             <label><strong>Текст рассылки:</strong></label><br>
             <textarea name="message_text" required style="width: 100%; max-width: 600px; min-height: 150px;">{{ message_text or '' }}</textarea>

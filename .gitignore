@@ -1,3 +1,4 @@
 .env
 logs.md
 files/video/*.mov
+uploads/

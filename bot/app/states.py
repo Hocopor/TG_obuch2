@@ -3,6 +3,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 class QuestionState(StatesGroup):
     waiting_text = State()
+    confirm = State()
 
 
 class ObjectState(StatesGroup):
@@ -12,3 +13,4 @@ class ObjectState(StatesGroup):
     waiting_photos = State()
     waiting_videos = State()
     waiting_budget = State()
+    waiting_confirm = State()

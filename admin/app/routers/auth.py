@@ -1,7 +1,8 @@
+import asyncio
+import secrets
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import RedirectResponse
 from shared.config import ADMIN_PASSWORD
-import secrets
 
 router = APIRouter()
 
@@ -14,12 +15,13 @@ async def login_page(request: Request):
 
 @router.post("/login")
 async def login(request: Request, password: str = Form(...)):
-    if password == ADMIN_PASSWORD:
+    if secrets.compare_digest(password, ADMIN_PASSWORD):
         token = secrets.token_hex(32)
         request.app.state.admin_token = token
         response = RedirectResponse("/", status_code=303)
-        response.set_cookie("admin_session", token, httponly=True)
+        response.set_cookie("admin_session", token, httponly=True, samesite="lax")
         return response
+    await asyncio.sleep(1)
     from ..dependencies import templates
     return templates.TemplateResponse("login.html", {"request": request, "error": "Неверный пароль"})
 

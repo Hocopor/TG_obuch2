@@ -8,7 +8,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tg_bot"]
       interval: 5s
@@ -23,6 +23,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      admin:
+        condition: service_started
     volumes:
       - ./shared:/app/shared
       - ./files:/app/files
@@ -37,7 +39,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
     volumes:
       - ./shared:/app/shared
       - ./files:/app/files

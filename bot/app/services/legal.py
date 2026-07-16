@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.models import LegalDocument, LegalDocTypeEnum
 from shared.config import ADMINKA_URL
+from .app_settings import get_setting
 
 # Плейсхолдеры — реальные URL, пока документы не загружены
 PLACEHOLDER_OFFER = "https://example.com/offer"
@@ -25,6 +26,9 @@ async def get_active_document(session: AsyncSession, doc_type: LegalDocTypeEnum)
 
 
 async def get_free_lessons_link(session: AsyncSession):
+    url = await get_setting(session, "free_lessons_url", "")
+    if url:
+        return url
     doc = await get_active_document(session, LegalDocTypeEnum.free_lessons)
     if doc:
         return f"{ADMINKA_URL}/legal/{doc.id}/download"

@@ -1,21 +1,38 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, Query
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from shared.models import Mailing, MailingCategoryEnum, MailingStatusEnum
-from datetime import datetime
+from sqlalchemy import select, func
+from shared.models import Mailing, MailingLog, MailingCategoryEnum, MailingStatusEnum
+from datetime import datetime, timezone
+from urllib.parse import urlencode
+from shared.config import TZ
 from ..dependencies import get_db, require_auth, templates
 
 router = APIRouter(prefix="/mailings", dependencies=[Depends(require_auth)])
 
+PAGE_SIZE = 50
+
 
 @router.get("")
-async def mailings_list(request: Request, session: AsyncSession = Depends(get_db)):
-    result = await session.execute(select(Mailing).order_by(Mailing.created_at.desc()))
+async def mailings_list(request: Request, page: int = Query(1), session: AsyncSession = Depends(get_db)):
+    page = max(page, 1)
+    total = (await session.execute(select(func.count(Mailing.id)))).scalar() or 0
+    result = await session.execute(
+        select(Mailing).order_by(Mailing.created_at.desc())
+        .limit(PAGE_SIZE).offset((page - 1) * PAGE_SIZE)
+    )
     mailings = result.scalars().all()
+    counts = await session.execute(
+        select(MailingLog.mailing_id, MailingLog.status, func.count())
+        .group_by(MailingLog.mailing_id, MailingLog.status)
+    )
+    stats = {}
+    for mid, st, c in counts.all():
+        d = stats.setdefault(mid, {"sent": 0, "failed": 0})
+        d[st.value] = c
     return templates.TemplateResponse("mailings.html", {
-        "request": request,
-        "mailings": mailings,
+        "request": request, "mailings": mailings, "stats": stats,
+        "page": page, "has_prev": page > 1, "has_next": page * PAGE_SIZE < total,
     })
 
 
@@ -46,7 +63,8 @@ async def mailing_create(
 
     scheduled_at = None
     if scheduled_at_str:
-        scheduled_at = datetime.fromisoformat(scheduled_at_str)
+        local = datetime.fromisoformat(scheduled_at_str).replace(tzinfo=TZ)
+        scheduled_at = local.astimezone(timezone.utc).replace(tzinfo=None)
 
     status = MailingStatusEnum.pending
     if not scheduled_at:
@@ -73,10 +91,11 @@ async def mailing_repeat(
     mailing = result.scalar_one_or_none()
     if not mailing:
         return RedirectResponse(url="/mailings", status_code=303)
-    return RedirectResponse(
-        url=f"/mailings/create?message_text={mailing.message_text}&target_category={mailing.target_category.value}",
-        status_code=303,
-    )
+    params = urlencode({
+        "message_text": mailing.message_text,
+        "target_category": mailing.target_category.value,
+    })
+    return RedirectResponse(url=f"/mailings/create?{params}", status_code=303)
 
 
 @router.post("/{mailing_id}/cancel")

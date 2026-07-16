@@ -1,290 +1,164 @@
 # Архитектура проекта
 
+> Документ сверен с кодом после Фазы 2.5 (2026-07-16). Описывает фактическое состояние.
+
 ## Стек
 
 | Компонент | Технология |
 |-----------|-----------|
-| Бот | Python 3.12 + aiogram 3 |
-| Админка | Python 3.12 + FastAPI + Jinja2 + SQLAlchemy |
-| БД | PostgreSQL 16 (Docker) |
-| ORM | SQLAlchemy 2.0 (async, asyncpg) |
+| Бот | Python + aiogram 3 (long polling) |
+| Админка | Python + FastAPI + Jinja2 + SQLAlchemy 2 (async) |
+| БД | PostgreSQL (Docker) |
+| ORM | SQLAlchemy 2 async (asyncpg) |
+| Планировщик | APScheduler (AsyncIOScheduler, MemoryJobStore) |
 | Контейнеры | Docker + docker-compose |
-| Reverse proxy | Caddy (уже на сервере) |
+| Reverse proxy | Caddy (на сервере) |
 
 ## Порты
 
+Оба порта слушают ТОЛЬКО на localhost (проброс `127.0.0.1:...` в docker-compose) — наружу не торчат, доступ снаружи только через Caddy (HTTPS).
+
 | Сервис | Порт | Назначение |
 |--------|------|-----------|
-| Бот | — | Фоновый процесс, порт не слушает |
-| Админка | 5000 | Внутренний, Caddy проксирует |
-| PostgreSQL | 5433 | Внутренний (из контейнера наружу) |
+| Бот | — | Фоновый процесс, портов не слушает |
+| Админка | 127.0.0.1:5000 | Caddy проксирует `andrew-bot-adminka.mak-o.ru` → localhost:5000 |
+| PostgreSQL | 127.0.0.1:5433 | Только локально |
+
+## Инициализация БД
+
+Таблицы/enum-типы создаёт **только админка** (`init_db()` → `create_all` в её lifespan). Бот при старте НЕ делает `create_all`, а ждёт готовности БД (`wait_for_db`: `SELECT 1 FROM users`, ретрай до 60 сек). Это исключает гонку двух сервисов на первом деплое. Изменения схемы на проде — вручную через `docs/migrations/*.sql` (Alembic не используется).
 
 ## Структура проекта
 
 ```
-tg_bot/
+TG_obuch2/
 ├── docker-compose.yml
-├── .env
+├── .env                          # секреты (в git не коммитить)
+├── shared/                       # общий код бота и админки
+│   ├── config.py                 # env-переменные (fail-fast), DSN с quote_plus, TZ=Europe/Moscow
+│   ├── database.py               # async-движок, async_session, Base, init_db
+│   ├── models.py                 # ВСЕ SQLAlchemy-модели (единый файл)
+│   ├── funnel.py                 # STAGE_ORDER + advance_stage (этап только вперёд)
+│   └── notifier.py               # прямые HTTP-уведомления в Telegram из админки (httpx)
 ├── bot/
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   └── app/
-│       ├── __init__.py
-│       ├── main.py              # Точка входа бота
-│       ├── config.py            # Настройки из .env
-│       ├── database.py          # Подключение к БД
-│       ├── models.py            # SQLAlchemy модели
+│       ├── main.py               # точка входа: wait_for_db, прокси, Dispatcher, middlewares, mailing_loop
+│       ├── keyboards.py          # все инлайн-клавиатуры
+│       ├── states.py             # FSM-состояния (QuestionState, ObjectState)
 │       ├── handlers/
-│       │   ├── __init__.py
-│       │   ├── start.py         # /start, приветствие, согласия
-│       │   ├── menu.py          # Главное меню
-│       │   ├── course.py        # О курсе, программа, тарифы
-│       │   ├── examples.py      # Примеры работ
-│       │   ├── reviews.py       # Отзывы
-│       │   ├── faq.py           # Частые вопросы
-│       │   ├── question.py      # Задать вопрос → группа поддержки
-│       │   ├── object.py        # Предложить свой объект
-│       │   ├── support.py       # Обработка сообщений из группы поддержки
-│       │   └── consent.py       # Отзыв согласия
+│       │   ├── start.py          # /start, /menu, согласие (accept_all), интро, цель, воронка примеров, неизвестные команды
+│       │   ├── menu.py           # главное меню, «Записаться», «О курсе», «Программа», «Примеры»
+│       │   ├── course.py         # «Подробнее о курсе», тарифы, сравнение тарифов
+│       │   ├── examples.py       # меню «Примеры работ»
+│       │   ├── reviews.py        # меню «Отзывы» + воронковая цепочка отзывов
+│       │   ├── faq.py            # ЧаВо
+│       │   ├── question.py       # «Задать вопрос» + автопересылка любых сообщений в поддержку
+│       │   ├── object.py         # анкета «Предложить свой объект» (FSM)
+│       │   ├── support.py        # ответы админов из группы поддержки → пользователю (copy_message)
+│       │   └── consent.py        # отзыв согласия (обезличивание журнала, удаление данных)
 │       ├── middlewares/
-│       │   ├── __init__.py
-│       │   ├── db.py            # Сессия БД на каждый апдейт
-│       │   └── anti_spam.py     # Антиспам (по необходимости)
-│       ├── services/
-│       │   ├── __init__.py
-│       │   ├── user.py          # CRUD пользователей
-│       │   ├── support.py       # Работа с группой поддержки
-│       │   ├── mailing.py       # Логика рассылок
-│       │   └── legal.py         # Юр-документы
-│       ├── states.py            # FSM-состояния
-│       └── keyboards.py         # Все клавиатуры
+│       │   ├── db.py             # сессия БД на каждый апдейт (data["session"])
+│       │   └── consent.py        # блок без согласий (пускает только /start и accept_all), анти-спам экрана
+│       └── services/
+│           ├── cache.py          # кэш file_id по пути+mtime, upsert (ON CONFLICT)
+│           ├── legal.py          # ссылки на юр-документы и бесплатные уроки
+│           ├── app_settings.py   # get_setting / get_tariff_urls (ссылки GetCourse из настроек)
+│           ├── support_service.py# ensure_thread (per-user Lock), deliver_to_support (copy_to), пересоздание закрытой темы
+│           ├── delayed.py        # run_detached — отложенные цепочки без удержания сессии БД
+│           └── mailing.py        # process_mailings (сбор получателей, RetryAfter, статусы, логи батчем)
 ├── admin/
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   └── app/
-│       ├── __init__.py
-│       ├── main.py              # FastAPI приложение
-│       ├── config.py
-│       ├── database.py
-│       ├── models.py            # Те же модели (общая БД)
-│       ├── dependencies.py      # Зависимости (сессия БД, авторизация)
-│       ├── auth.py              # Авторизация админа
+│       ├── main.py               # FastAPI (lifespan → init_db), монтирование роутеров и static
+│       ├── dependencies.py       # templates + jinja (msk, full_name, goal_ru, stage_ru), get_db, require_auth
 │       ├── routers/
-│       │   ├── __init__.py
-│       │   ├── dashboard.py     # Дашборд / аналитика
-│       │   ├── users.py         # Список / поиск / карточка пользователя
-│       │   ├── mailings.py      # Рассылки
-│       │   ├── objects.py       # Объекты
-│       │   ├── legal.py         # Юр-документы
-│       │   └── auth.py          # Логин/логаут
-│       ├── templates/           # Jinja2 шаблоны
-│       │   ├── base.html
-│       │   ├── login.html
-│       │   ├── dashboard.html
-│       │   ├── users/
-│       │   ├── mailings/
-│       │   ├── objects/
-│       │   └── legal/
-│       └── static/              # CSS, JS
-├── shared/
-│   ├── __init__.py
-│   ├── config.py                # Общие настройки
-│   ├── database.py              # Движок БД (общий)
-│   └── models.py                # Единый файл моделей
+│       │   ├── auth.py           # логин (compare_digest, cookie samesite=lax), логаут
+│       │   ├── dashboard.py      # статистика + воронка по STAGE_ORDER
+│       │   ├── users.py          # список/поиск (имя/username/телефон/id)/карточка, пагинация
+│       │   ├── mailings.py       # создание/повтор/отмена рассылок, счётчики доставки, пагинация
+│       │   ├── objects.py        # список/карточка, назначение (datalist)/отклонение/возврат, выгрузка .txt
+│       │   ├── legal.py          # загрузка/публичная выдача юр-документов
+│       │   └── settings.py       # прокси, ссылки уроков/тарифов
+│       ├── templates/            # base, login, dashboard, users, user_detail, mailings,
+│       │   │                     # mailing_create, objects, object_detail, legal, settings
+│       └── static/               # (стили инлайн в base.html; каталог смонтирован, но не используется)
 ├── files/
-│   ├── images/                  # Тестовые изображения
-│   └── video/                   # Тестовые видео
+│   ├── images/                   # отзыв_анна.jpg, отзыв_владимир.jpg, сравнительнаятаблица.png
+│   └── video/                    # видео_пример_1..3.mp4
 └── docs/
-    ├── TZ.md
-    └── ARCHITECTURE.md
+    ├── TZ.md                     # исходное ТЗ
+    ├── ARCHITECTURE.md           # этот файл
+    ├── CODE_REVIEW.md            # ревью (5 проходов)
+    ├── FIX_DESIGN.md             # проект исправлений Фазы 2.5
+    └── migrations/               # SQL-миграции для прод-БД
 ```
 
-## Модель данных
+## Модель данных (shared/models.py)
 
-### users
-Основная таблица пользователей.
+10 таблиц. Отличия от первичной схемы (по итогам Фазы 2.5) выделены.
 
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | SERIAL PK | |
-| telegram_id | BIGINT UNIQUE | Telegram user ID |
-| username | VARCHAR(255) | @username |
-| first_name | VARCHAR(255) | Имя |
-| last_name | VARCHAR(255) | Фамилия |
-| phone | VARCHAR(50) | Телефон (если собирается) |
-| goal | ENUM | own_objects / earn_money / exploring_ai |
-| consent_offer | BOOLEAN | Принята ли оферта |
-| consent_personal_data | BOOLEAN | Принята ли политика ПДн |
-| funnel_stage | VARCHAR(50) | Текущий этап воронки |
-| support_thread_id | INTEGER | ID темы в группе поддержки |
-| created_at | TIMESTAMP | Регистрация |
-| updated_at | TIMESTAMP | Последнее обновление |
-
-### consent_log
-Журнал согласий (для юридической защиты).
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | SERIAL PK | |
-| user_id | FK → users | |
-| consent_type | ENUM | offer / personal_data |
-| accepted | BOOLEAN | |
-| timestamp | TIMESTAMP | |
-
-### questions
-Вопросы пользователей (через кнопку "Задать вопрос" и обычные сообщения).
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | SERIAL PK | |
-| user_id | FK → users | |
-| message_text | TEXT | Текст вопроса |
-| status | ENUM | pending / answered / closed |
-| created_at | TIMESTAMP | |
-
-### objects
-Предложенные объекты недвижимости.
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | SERIAL PK | |
-| user_id | FK → users | |
-| object_name | VARCHAR(500) | Название |
-| address | TEXT | Адрес |
-| description | TEXT | Что хотят видеть |
-| photo_links | TEXT | Ссылки на фото |
-| video_links | TEXT | Ссылки на видео |
-| budget | VARCHAR(255) | Бюджет |
-| status | ENUM | pending / accepted / assigned / rejected |
-| assigned_to | FK → users NULL | Кому назначен |
-| admin_notes | TEXT | Заметки админа |
-| created_at | TIMESTAMP | |
-| updated_at | TIMESTAMP | |
-
-### mailings
-Рассылки.
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | SERIAL PK | |
-| message_text | TEXT | Текст рассылки |
-| target_category | ENUM | all / own_objects / earn_money / exploring_ai |
-| scheduled_at | TIMESTAMP NULL | Когда отправить (NULL = сейчас) |
-| status | ENUM | pending / sending / sent / cancelled / error |
-| created_at | TIMESTAMP | |
-
-### mailing_logs
-Логи отправки рассылок.
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | SERIAL PK | |
-| mailing_id | FK → mailings | |
-| user_id | FK → users | |
-| status | ENUM | sent / failed |
-| error_message | TEXT NULL | |
-| sent_at | TIMESTAMP | |
-
-### legal_documents
-Юридические документы (загружаются через админку).
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | SERIAL PK | |
-| document_type | ENUM | offer / privacy_policy / personal_data_policy |
-| file_path | TEXT | Путь к файлу на диске |
-| file_name | VARCHAR(255) | Оригинальное имя |
-| uploaded_at | TIMESTAMP | |
-| is_active | BOOLEAN | Активен ли документ |
-
-### analytics_events
-События аналитики воронки.
-
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | SERIAL PK | |
-| user_id | FK → users | |
-| event_type | VARCHAR(50) | Тип события |
-| metadata | JSONB | Доп. данные |
-| timestamp | TIMESTAMP | |
+- **users** — id, telegram_id (UNIQUE), username, first_name, last_name, phone, goal(enum), consent_offer, consent_personal_data, funnel_stage, support_thread_id, created_at, updated_at.
+- **consent_log** — id, **user_id (FK, NULLABLE)**, consent_type(enum), **telegram_id (BIGINT)**, accepted, timestamp. При отзыве согласия записи обезличиваются (user_id→NULL, telegram_id заполняется), журнал сохраняется (152-ФЗ).
+- **questions** — id, user_id, message_text, status, created_at.
+- **objects** — id, user_id, **object_name (NULLABLE)**, address, description, photo_links, video_links, budget, status(enum: pending/accepted/assigned/rejected), assigned_to (FK NULL), admin_notes, **cancelled (BOOL)**, created_at, updated_at. Новые объекты приходят со статусом `accepted`; `cancelled=True` — пользователь прервал анкету (частичное сохранение).
+- **mailings** — id, message_text, target_category(enum), scheduled_at (naive UTC), status(enum: pending/sending/sent/cancelled/error), created_at.
+- **mailing_logs** — id, mailing_id, user_id, status(enum: sent/failed), error_message, sent_at.
+- **legal_documents** — id, document_type(enum: offer/privacy_policy/personal_data_policy/free_lessons), file_path, file_name, uploaded_at, is_active.
+- **analytics_events** — id, user_id, event_type, metadata(JSON), timestamp.
+- **settings** — id, key(UNIQUE), value, updated_at. Ключи: `proxy_url`, `free_lessons_url`, `tariff_self_url`, `tariff_support_url`, `tariff_pro_url`.
+- **cached_files** — id, file_path(UNIQUE), file_id, file_type, **file_mtime (FLOAT)**, created_at. Кэш инвалидируется при изменении mtime файла.
 
 ## Ключевые потоки
 
 ### Воронка продаж (бот)
 ```
-/start → Приветствие → Оферта (принять) → ПДн (принять)
-→ "Кто мы" → "Какая цель" (выбор) → Видео-примеры
-→ Бесплатные уроки → "Посмотрел" (или 30 мин)
-→ Отзывы → "Подробнее о курсе" → Программа
-→ Тарифы → Выбор тарифа (внешняя ссылка на GetCourse)
+/start → экран согласия (3 ссылки + «Принять» = accept_all: оба флага + 2 ConsentLog)
+→ CONFIRM_TEXT «Кто мы» → «Далее» → «Какая у вас цель?» (3 кнопки, персональный ответ)
+→ интро-текст → видео 5/20/20с → +30с «4 бесплатных урока» + «Посмотрел»
+→ (кнопка ИЛИ таймер APScheduler 30 мин) → цепочка отзывов → «Подробнее о курсе»
+→ О курсе → +15с программа → «Узнать тарифы» → 3 тарифа + таблица → «Выберите тариф» (GetCourse-ссылки)
 ```
+Отложенные цепочки — через `run_detached` (не держат сессию БД на sleep'ах); `funnel_stage` двигается только вперёд (`advance_stage`).
+
+### Согласие и доступ
+Без обоих согласий `ConsentMiddleware` пропускает только `/start` и callback `accept_all`; на остальное показывает экран согласия (анти-спам 15 сек). Отзыв согласия: снятие назначений чужих объектов, обезличивание журнала, удаление темы поддержки и данных, затем снова экран согласия.
 
 ### Группа поддержки
 ```
-Пользователь пишет сообщение боту (после согласий)
-→ Бот создаёт тему в группе (если ещё нет)
-→ Пересылает сообщение в тему
-Админ отвечает в тему
-→ Бот ловит ответ (handler на сообщения из группы)
-→ Пересылает пользователю
+Пользователь пишет что угодно боту (после согласий)
+→ support_service.deliver_to_support: ensure_thread (создаёт тему, per-user Lock) → message.copy_to(тема)
+→ при закрытой/удалённой теме — пересоздание и повтор
+Админ отвечает в теме → support.py: copy_message → пользователю (любой тип контента)
 ```
 
-### Админка — навигация
-```
-/login → Авторизация (пароль)
-→ Дашборд (аналитика: сколько пользователей, воронка, конверсия)
-→ Пользователи (список, поиск, карточка)
-→ Рассылки (создание, планирование, история)
-→ Объекты (список, назначение/отклонение)
-→ Юр-документы (загрузка, активация)
-```
+### Уведомления о назначении объекта
+Единственный механизм — `shared/notifier.py`, вызывается из админки при назначении через FastAPI `BackgroundTasks` (страница не висит на HTTP к Telegram). Поля экранируются `html.escape`. (Старые `check_new_orders` и `services/notification.py` удалены.)
 
-## Docker
+### Рассылки
+`mailing_loop` в боте раз в минуту зовёт `process_mailings`: выбирает готовые (scheduled_at ≤ now в UTC), помечает `sending`, собирает получателей заранее, шлёт с паузой 0.05с и одним повтором при `TelegramRetryAfter`, пишет логи батчем, ставит статус `sent`/`error`. При старте бота зависшие `sending` возвращаются в `pending`. Время в админке вводится/показывается в МСК (`TZ`, фильтр `msk`), хранится как naive UTC.
 
-### docker-compose.yml (схема)
+## Docker (docker-compose.yml, схема)
 ```yaml
 services:
-  db:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: tg_bot
-      POSTGRES_USER: tg_bot
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
-
-  bot:
-    build: ./bot
-    env_file: .env
-    depends_on:
-      - db
-    restart: always
-
-  admin:
-    build: ./admin
-    env_file: .env
-    depends_on:
-      - db
-    ports:
-      - "5000:5000"
-    restart: always
-
-volumes:
-  pgdata:
+  db:        # postgres, порт "127.0.0.1:5433:5432", volume pgdata, healthcheck
+  admin:     # build ./admin, "127.0.0.1:5000:5000", volume uploads:/app/uploads, depends_on db(healthy)
+  bot:       # build ./bot, depends_on admin(started)+db(healthy), restart: always
+volumes: [pgdata, uploads]
 ```
 
-## Caddy (конфиг для добавления)
+## Caddy
 ```
-andrew-bot-adminka.mak-o.ru {
-    reverse_proxy localhost:5000
-}
+andrew-bot-adminka.mak-o.ru { reverse_proxy localhost:5000 }
 ```
 
-## Безопасность и изоляция
-- Каждый сервис в своём Docker-контейнере
-- БД доступна только изнутри Docker-сети (порт 5433 не expose наружу в продакшене)
-- Админка за авторизацией (пароль в .env)
-- Юр-документы хранятся на диске, отдаются по защищённой ссылке
-- Telegram-токен и пароль БД — только в .env, не коммитятся
+## Безопасность
+- Порты БД и админки — только localhost; наружу через Caddy (HTTPS).
+- Пароль админки — `secrets.compare_digest`, задержка 1с при ошибке, cookie httponly+samesite=lax.
+- DSN экранирует логин/пароль (`quote_plus`) — спецсимволы в пароле безопасны.
+- Токен бота, CHAT_ID, пароли — только в `.env` (fail-fast при отсутствии обязательных).
+- Загрузка юр-документов: whitelist расширений, uuid-имя на диске, лимит 20 МБ, PDF отдаётся `inline`.
+- FSM — MemoryStorage (осознанно): сценарии короткие, `/start`/`/menu` чистят state. Таймер отзывов (MemoryJobStore) не переживает рестарт — допущение.
+```

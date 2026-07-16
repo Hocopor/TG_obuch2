@@ -6,7 +6,7 @@
 <a href="/mailings/create" class="btn btn-primary" style="margin-bottom: 15px;">➕ Создать рассылку</a>
 <div class="card">
     <table>
-        <tr><th>ID</th><th>Текст</th><th>Категория</th><th>Статус</th><th>Создана</th><th>Запланирована</th><th>Действия</th></tr>
+        <tr><th>ID</th><th>Текст</th><th>Категория</th><th>Статус</th><th>Доставлено / Ошибок</th><th>Создана</th><th>Запланирована</th><th>Действия</th></tr>
         {% for m in mailings %}
         <tr>
             <td>{{ m.id }}</td>
@@ -26,8 +26,9 @@
                 {% elif m.status.value == 'error' %}❌ Ошибка
                 {% else %}{{ m.status.value }}{% endif %}
             </span></td>
-            <td>{{ m.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
-            <td>{{ m.scheduled_at.strftime('%d.%m.%Y %H:%M') if m.scheduled_at else 'Сейчас' }}</td>
+            <td>{{ stats.get(m.id, {}).get('sent', 0) }} / {{ stats.get(m.id, {}).get('failed', 0) }}</td>
+            <td>{{ m.created_at | msk }}</td>
+            <td>{{ m.scheduled_at | msk if m.scheduled_at else 'Сейчас' }}</td>
             <td>
                 {% if m.status.value == 'pending' %}
                 <form method="post" action="/mailings/{{ m.id }}/cancel" style="display:inline;">
@@ -41,5 +42,10 @@
         </tr>
         {% endfor %}
     </table>
+    <div style="margin-top:15px;">
+        {% if has_prev %}<a class="btn btn-primary" href="?page={{ page-1 }}">← Назад</a>{% endif %}
+        <span style="margin:0 10px;">Страница {{ page }}</span>
+        {% if has_next %}<a class="btn btn-primary" href="?page={{ page+1 }}">Вперёд →</a>{% endif %}
+    </div>
 </div>
 {% endblock %}

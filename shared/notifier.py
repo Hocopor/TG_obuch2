@@ -1,3 +1,4 @@
+import html
 import logging
 import httpx
 from sqlalchemy import select
@@ -30,7 +31,7 @@ async def send_message(chat_id: int, text: str) -> bool:
     proxy_url = await _get_proxy_url()
     logger.info("Notifier: sending to chat_id=%s, proxy=%s", chat_id, proxy_url)
     try:
-        async with httpx.AsyncClient(proxy=proxy_url, timeout=15) as client:
+        async with httpx.AsyncClient(proxy=proxy_url, timeout=5) as client:
             resp = await client.post(
                 f"{API_URL}/sendMessage",
                 json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
@@ -49,7 +50,7 @@ async def notify_customer(customer_telegram_id: int, object_name: str):
     """Уведомляет заказчика, что его объект принят в работу."""
     text = (
         f"🏠 <b>Ваш объект принят в работу!</b>\n\n"
-        f"Объект: <b>{object_name}</b>\n"
+        f"Объект: <b>{html.escape(object_name)}</b>\n"
         f"Мы уже приступили к работе. Скоро с вами свяжутся для уточнения деталей."
     )
     await send_message(customer_telegram_id, text)
@@ -66,15 +67,15 @@ async def notify_performer(
     """Уведомляет исполнителя о назначении заказа."""
     text = (
         f"📌 <b>Вам назначен новый объект!</b>\n\n"
-        f"Объект: <b>{object_name}</b>\n"
+        f"Объект: <b>{html.escape(object_name)}</b>\n"
     )
     if address:
-        text += f"Адрес: {address}\n"
+        text += f"Адрес: {html.escape(address)}\n"
     if description:
-        text += f"Описание: {description}\n"
+        text += f"Описание: {html.escape(description)}\n"
     if budget:
-        text += f"Бюджет: {budget}\n"
+        text += f"Бюджет: {html.escape(budget)}\n"
     if customer_username:
-        text += f"Заказчик: @{customer_username}\n"
+        text += f"Заказчик: @{html.escape(customer_username)}\n"
     text += "\nСвяжитесь с заказчиком для обсуждения деталей."
     await send_message(performer_telegram_id, text)

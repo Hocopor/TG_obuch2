@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 from sqlalchemy import (
     Column, Integer, BigInteger, String, Text, Boolean, DateTime,
-    ForeignKey, Enum, JSON
+    ForeignKey, Enum, JSON, Float
 )
 from sqlalchemy.orm import relationship
 from .database import Base
@@ -82,8 +82,9 @@ class ConsentLog(Base):
     __tablename__ = "consent_log"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     consent_type = Column(Enum(ConsentTypeEnum), nullable=False)
+    telegram_id = Column(BigInteger, nullable=True)
     accepted = Column(Boolean, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
@@ -107,12 +108,13 @@ class Object(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    object_name = Column(String(500), nullable=False)
+    object_name = Column(String(500), nullable=True)
     address = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
     photo_links = Column(Text, nullable=True)
     video_links = Column(Text, nullable=True)
     budget = Column(String(255), nullable=True)
+    cancelled = Column(Boolean, default=False, nullable=False)
     status = Column(Enum(ObjectStatusEnum), default=ObjectStatusEnum.pending)
     assigned_to = Column(Integer, ForeignKey("users.id"), nullable=True)
     admin_notes = Column(Text, nullable=True)
@@ -189,4 +191,5 @@ class CachedFile(Base):
     file_path = Column(String(500), unique=True, nullable=False)
     file_id = Column(Text, nullable=False)
     file_type = Column(String(20), nullable=False)
+    file_mtime = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

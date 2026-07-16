@@ -29,8 +29,19 @@ async def settings_save(
     session: AsyncSession = Depends(get_db),
     _auth: bool = Depends(require_auth),
     proxy_url: str = Form(""),
+    free_lessons_url: str = Form(""),
+    tariff_self_url: str = Form(""),
+    tariff_support_url: str = Form(""),
+    tariff_pro_url: str = Form(""),
 ):
-    for key, value in [("proxy_url", proxy_url)]:
+    pairs = [
+        ("proxy_url", proxy_url),
+        ("free_lessons_url", free_lessons_url),
+        ("tariff_self_url", tariff_self_url),
+        ("tariff_support_url", tariff_support_url),
+        ("tariff_pro_url", tariff_pro_url),
+    ]
+    for key, value in pairs:
         result = await session.execute(
             select(Settings).where(Settings.key == key)
         )
